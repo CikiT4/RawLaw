@@ -318,7 +318,7 @@ export function buildPlatformDataset(): PlatformDataset {
         reviewCount,
         experience,
         price,
-        image: `https://api.dicebear.com/7.x/personas/svg?seed=finprose-lawyer-${lawyerIndex}`,
+        image: `https://api.dicebear.com/7.x/personas/svg?seed=yda-lawyer-${lawyerIndex}`,
         description: `${fullName} adalah advokat ${category.name.toLowerCase()} berbasis ${city} dengan ${experience} tahun pengalaman. Beliau menangani ${consultationCount}+ konsultasi dengan success rate ${successRate}% dan fokus pada strategi hukum yang measurable.`,
         isOnline: lawyerIndex % 4 !== 0,
         languages,
@@ -350,7 +350,7 @@ export function buildPlatformDataset(): PlatformDataset {
     clients.push({
       id: i === 1 ? DEMO_CLIENT_ID : uuidFromIndex('20000000-0000-4000-8000', i),
       fullName: `${firstName} ${lastName}`,
-      email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}${i}@client.finpro.id`,
+      email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}${i}@client.ydalawoffice.id`,
       phone: `08${11 + (i % 8)}${String(10000000 + Math.floor(rand() * 89999999))}`,
       address: `Jl. ${pick(rand, ['Sudirman', 'Thamrin', 'Diponegoro', 'Ahmad Yani', 'Gatot Subroto'])} No. ${i}, ${pick(rand, CITIES)}`,
       gender: isFemale ? 'female' : 'male',
@@ -617,9 +617,9 @@ export function buildPlatformDataset(): PlatformDataset {
       clientId: DEMO_CLIENT_ID,
       lawyerId: DEMO_LAWYER_ID,
       adminId: DEMO_ADMIN_ID,
-      clientEmail: 'demo.client@finpro.id',
-      lawyerEmail: 'demo.lawyer@finpro.id',
-      adminEmail: 'demo.admin@finpro.id'
+      clientEmail: 'demo.client@ydalawoffice.id',
+      lawyerEmail: 'demo.lawyer@ydalawoffice.id',
+      adminEmail: 'demo.admin@ydalawoffice.id'
     }
   };
 
@@ -729,7 +729,7 @@ export function toConsultationRow(row: PlatformConsultation) {
     },
     profiles: {
       full_name: row.clientName,
-      email: `${row.clientName.toLowerCase().replace(/\s+/g, '.')}@client.finpro.id`
+      email: `${row.clientName.toLowerCase().replace(/\s+/g, '.')}@client.ydalawoffice.id`
     },
     app_payments: [{
       id: `pay-${row.id.slice(0, 8)}`,

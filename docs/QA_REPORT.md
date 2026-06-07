@@ -23,7 +23,7 @@
 | Payment "Failed to Fetch" | Critical | Fixed (dev) | server.js + Vite proxy |
 | Branding not migrated | High | Fixed | YDA LAW OFFICE & Partners |
 | Hardcoded dashboard data | High | Fixed | Empty fallbacks; live data only |
-| i18n language not persisted | Medium | Fixed | localStorage.finprose_lang |
+| i18n language not persisted | Medium | Fixed | localStorage.yda_lang |
 
 ## RBAC (Code Review)
 

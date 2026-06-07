@@ -2,9 +2,10 @@
  * Skrip All-in-One: Buat tabel knowledge_base + Upload data CSV
  * Menggunakan Supabase REST API dengan service_role key
  * 
- * Jalankan: node setup_and_upload_knowledge.cjs
+ * Jalankan: node scripts/dev/setup-knowledge-base.cjs
  */
 const fs = require('fs');
+const path = require('path');
 const csv = require('csv-parser');
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
@@ -126,7 +127,9 @@ async function insertBatch(records) {
 // MAIN
 // ============================================================
 async function main() {
-  const basePath = 'F:\\FINPROSE\\data testing rawlaw\\data testing rawlaw';
+  const root = path.join(__dirname, '..', '..');
+  const basePath = path.join(root, 'data', 'knowledge-base');
+  const migrationPath = path.join(root, 'supabase', 'migrations', '018_knowledge_base.sql');
 
   // Step 1: Check if table exists, if not ask user to create it
   console.log('🔍 Memeriksa apakah tabel knowledge_base sudah ada...');
@@ -135,8 +138,9 @@ async function main() {
   if (tableCheck && tableCheck.message.includes("Could not find the table")) {
     console.log('\n⚠️  Tabel knowledge_base BELUM ADA di database Supabase Anda.');
     console.log('📋 Silakan buka Supabase Dashboard > SQL Editor, lalu jalankan isi file:');
-    console.log('   F:\\FINPROSE\\supabase\\migrations\\018_knowledge_base.sql');
-    console.log('\nSetelah itu, jalankan skrip ini lagi.\n');
+    console.log(`   ${migrationPath}`);
+    console.log('\nSetelah itu, jalankan skrip ini lagi:\n');
+    console.log('   node scripts/dev/setup-knowledge-base.cjs\n');
     process.exit(1);
   }
 
@@ -147,7 +151,7 @@ async function main() {
 
   // 2a. Daftar Pengadilan
   try {
-    const records = await uploadDaftarPengadilan(`${basePath}\\daftar_pengadilan.csv`);
+    const records = await uploadDaftarPengadilan(path.join(basePath, 'daftar_pengadilan.csv'));
     console.log(`  📊 ${records.length} baris ditemukan`);
     totalUploaded += await insertBatch(records);
   } catch (e) {
@@ -156,7 +160,7 @@ async function main() {
 
   // 2b. Kasus Kekerasan & Perlindungan Hukum
   try {
-    const records = await uploadViolenceReporting(`${basePath}\\indonesia-violence-reporting-text.csv`);
+    const records = await uploadViolenceReporting(path.join(basePath, 'indonesia-violence-reporting-text.csv'));
     console.log(`  📊 ${records.length} baris ditemukan`);
     totalUploaded += await insertBatch(records);
   } catch (e) {
@@ -165,7 +169,7 @@ async function main() {
 
   // 2c. Statistik Tindak Pidana
   try {
-    const records = await uploadTindakPidana(`${basePath}\\Presentase Penyelesaian Tindak Pidana di Indonesia tahun 2021-2022.csv`);
+    const records = await uploadTindakPidana(path.join(basePath, 'Presentase Penyelesaian Tindak Pidana di Indonesia tahun 2021-2022.csv'));
     console.log(`  📊 ${records.length} baris ditemukan`);
     totalUploaded += await insertBatch(records);
   } catch (e) {

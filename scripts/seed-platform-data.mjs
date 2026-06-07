@@ -1,5 +1,5 @@
 /**
- * Seeds FINPROSE Supabase with the full demo platform dataset.
+ * Seeds YDA LAW OFFICE & Partners Supabase with the full demo platform dataset.
  *
  * Usage:
  *   npm run seed
@@ -54,7 +54,7 @@ async function upsertBatch(table, rows, onConflict) {
 }
 
 async function main() {
-  console.log('Seeding FINPROSE platform data...');
+  console.log('Seeding YDA LAW OFFICE & Partners platform data...');
 
   const categories = CATEGORY_DEFS.map(([name, description], index) => ({
     id: uuid('c0000000-0000-4c00-8000', index + 1),
@@ -78,7 +78,7 @@ async function main() {
     for (let i = 0; i < count; i += 1) {
       lawyerIndex += 1;
       const id = lawyerIndex === 1 ? 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' : uuid('10000000-0000-4000-8000', lawyerIndex);
-      const email = `lawyer.${lawyerIndex}@lawyer.finpro.id`;
+      const email = `lawyer.${lawyerIndex}@lawyer.ydalawoffice.id`;
       users.push({ id, email, role: 'lawyer', status: 'active' });
       profiles.push({
         id,
@@ -103,7 +103,7 @@ async function main() {
         is_online: lawyerIndex % 3 !== 0,
         verification_status: 'verified',
         gender: lawyerIndex % 2 === 0 ? 'female' : 'male',
-        law_firm: 'FinPro Legal Partners',
+        law_firm: 'YDA LAW OFFICE & Partners',
         office_location: 'Jakarta, Indonesia',
         languages: ['Bahasa Indonesia', 'English'],
         education: ['S1 Hukum Universitas Indonesia'],
@@ -123,15 +123,15 @@ async function main() {
 
   for (let i = 1; i <= 200; i += 1) {
     const id = i === 1 ? 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' : uuid('20000000-0000-4000-8000', i);
-    const email = `client.${i}@client.finpro.id`;
+    const email = `client.${i}@client.ydalawoffice.id`;
     users.push({ id, email, role: 'toliver', status: 'active' });
     profiles.push({
       id,
       full_name: `Klien Demo ${i}`,
       email,
       phone: `0812${String(10000000 + i)}`,
-      avatar_url: `/avatars/toliver-${(i % 6) + 1}.png`,
-      bio: 'Klien FINPROSE',
+      avatar_url: `/avatars/client-${(i % 6) + 1}.png`,
+      bio: 'Klien YDA LAW OFFICE & Partners',
       address: `Jl. Demo No. ${i}, Jakarta`,
       role: 'toliver',
       status: 'active',
@@ -140,11 +140,11 @@ async function main() {
     });
   }
 
-  users.push({ id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', email: 'demo.admin@finpro.id', role: 'admin', status: 'active' });
+  users.push({ id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', email: 'demo.admin@ydalawoffice.id', role: 'admin', status: 'active' });
   profiles.push({
     id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
-    full_name: 'Admin FINPROSE',
-    email: 'demo.admin@finpro.id',
+    full_name: 'Admin YDA LAW OFFICE & Partners',
+    email: 'demo.admin@ydalawoffice.id',
     role: 'admin',
     status: 'active',
     membership_status: 'active'
@@ -222,9 +222,9 @@ async function main() {
 
   console.log(`Seeded ${categories.length} categories, ${lawyers.length} lawyers, ${clientIds.length} clients, ${consultations.length} consultations, ${transactions.length} transactions, ${reviews.length} reviews.`);
   console.log('Demo accounts (create auth users separately if needed):');
-  console.log('  client: demo.client@finpro.id / client id aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
-  console.log('  lawyer: demo.lawyer@finpro.id / lawyer id bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
-  console.log('  admin:  demo.admin@finpro.id / admin id cccccccc-cccc-4ccc-8ccc-cccccccccccc');
+  console.log('  client: demo.client@ydalawoffice.id / client id aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+  console.log('  lawyer: demo.lawyer@ydalawoffice.id / lawyer id bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+  console.log('  admin:  demo.admin@ydalawoffice.id / admin id cccccccc-cccc-4ccc-8ccc-cccccccccccc');
 }
 
 main().catch(error => {

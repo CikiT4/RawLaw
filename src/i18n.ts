@@ -21,7 +21,7 @@ const resources = {
   }
 };
 
-const savedLang = localStorage.getItem('finprose_lang') || 'id';
+const savedLang = localStorage.getItem('yda_lang') || localStorage.getItem('finprose_lang') || 'id';
 
 i18n
   .use(initReactI18next)

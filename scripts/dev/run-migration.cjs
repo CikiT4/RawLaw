@@ -3,8 +3,11 @@
  * Connects to Supabase database directly using the pooler connection.
  */
 const { Client } = require('pg');
+const path = require('path');
 require('dotenv').config();
 const fs = require('fs');
+
+const ROOT = path.join(__dirname, '..', '..');
 
 const projectRef = 'rvsievmsfqynoesdlfym';
 
@@ -28,7 +31,7 @@ if (!dbPassword) {
   console.log('3. Tambahkan baris berikut ke file .env Anda:');
   console.log('   SUPABASE_DB_PASSWORD="password_anda_disini"');
   console.log('');
-  console.log('4. Jalankan skrip ini lagi: node run_migration.cjs');
+  console.log('4. Jalankan skrip ini lagi: node scripts/dev/run-migration.cjs');
   console.log('');
   console.log('ATAU alternatif yang lebih mudah:');
   console.log('1. Buka https://supabase.com/dashboard/project/rvsievmsfqynoesdlfym/sql/new');
@@ -48,7 +51,7 @@ async function main() {
     await client.connect();
     console.log('✅ Terhubung!\n');
 
-    const sql = fs.readFileSync('supabase/migrations/018_knowledge_base.sql', 'utf8');
+    const sql = fs.readFileSync(path.join(ROOT, 'supabase/migrations/018_knowledge_base.sql'), 'utf8');
     
     console.log('🚀 Menjalankan migrasi 018_knowledge_base.sql...');
     await client.query(sql);

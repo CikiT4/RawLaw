@@ -200,7 +200,7 @@ export function getAdminDashboardData() {
     price: c.price,
     notes: c.notes,
     created_at: c.createdAt,
-    profiles: { full_name: c.clientName, email: `${c.clientName.toLowerCase().replace(/\s+/g, '.')}@client.finpro.id` },
+    profiles: { full_name: c.clientName, email: `${c.clientName.toLowerCase().replace(/\s+/g, '.')}@client.ydalawoffice.id` },
     lawyer_directory: { name: c.lawyerName, specialty: c.lawyerSpecialty },
     app_payments: [{
       id: `pay-${c.id.slice(0, 8)}`,
@@ -226,7 +226,7 @@ export function getAdminDashboardData() {
     external_reference: t.invoiceNumber,
     created_at: t.createdAt,
     paid_at: t.paidAt,
-    profiles: { full_name: t.clientName, email: `${t.clientName.toLowerCase().replace(/\s+/g, '.')}@client.finpro.id` },
+    profiles: { full_name: t.clientName, email: `${t.clientName.toLowerCase().replace(/\s+/g, '.')}@client.ydalawoffice.id` },
     app_consultations: {
       lawyer_id: t.lawyerId,
       consultation_type: 'chat',
@@ -252,7 +252,7 @@ export function getAdminDashboardData() {
       verification_status: 'verified' as const,
       profiles: {
         full_name: l.name,
-        email: `${l.name.split(',')[0].toLowerCase().replace(/\s+/g, '.')}@lawyer.finpro.id`,
+        email: `${l.name.split(',')[0].toLowerCase().replace(/\s+/g, '.')}@lawyer.ydalawoffice.id`,
         status: 'active',
         avatar_url: l.image
       }

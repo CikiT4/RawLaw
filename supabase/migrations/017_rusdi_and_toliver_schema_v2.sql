@@ -672,7 +672,7 @@ for each row execute function public.handle_delete_ai_chat_history();
 
 
 -- 7. High-Volume PL/pgSQL Seeder
--- Generates 10 categories, 300 Tolivers, 100 Lawyers, 500 Consultations, 1000 Reviews, and 800 Transactions
+-- Generates 10 categories, 300 Clients, 100 Lawyers, 500 Consultations, 1000 Reviews, and 800 Transactions
 do $$
 declare
   -- Arrays of realistic names
@@ -695,7 +695,7 @@ declare
     'Pengurusan visa kerja, izin tinggal (ITAS/ITAP), deportasi, kewarganegaraan ganda.'
   ];
 
-  -- Toliver and Lawyer lists
+  -- Client and Lawyer lists
   toliver_ids uuid[];
   lawyer_ids uuid[];
 
@@ -755,13 +755,13 @@ begin
     cat_ids := array_append(cat_ids, category_id);
   end loop;
 
-  -- 7b. Seed 300 Toliver users
+  -- 7b. Seed 300 Client users
   for i in 1..300 loop
     uid := gen_random_uuid();
     idx_first := floor(random() * array_length(first_names, 1) + 1)::int;
     idx_last := floor(random() * array_length(last_names, 1) + 1)::int;
     full_name := first_names[idx_first] || ' ' || last_names[idx_last];
-    email := lower(first_names[idx_first]) || '.' || lower(last_names[idx_last]) || i || '@toliver.finpro.id';
+    email := lower(first_names[idx_first]) || '.' || lower(last_names[idx_last]) || i || '@client.ydalawoffice.id';
 
     insert into public.users (id, email, role, status, created_at)
     values (uid, email, 'toliver', 'active', now() - (random() * 365 * interval '1 day'))
@@ -772,8 +772,8 @@ begin
       uid,
       full_name,
       '0812' || floor(10000000 + random() * 90000000)::text,
-      '/avatars/toliver-' || (floor(random() * 6) + 1)::text || '.png',
-      'Halo, saya Toliver di platform FinPro Legal.',
+      '/avatars/client-' || (floor(random() * 6) + 1)::text || '.png',
+      'Halo, saya Client di platform YDA LAW OFFICE & Partners.',
       'Jl. Raya No. ' || i || ', Jakarta, Indonesia',
       '3171' || floor(100000000000 + random() * 900000000000)::text,
       '1970-01-01'::date + (random() * 12000 * interval '1 day'),
@@ -790,7 +790,7 @@ begin
     idx_first := floor(random() * array_length(first_names, 1) + 1)::int;
     idx_last := floor(random() * array_length(last_names, 1) + 1)::int;
     full_name := first_names[idx_first] || ' ' || last_names[idx_last] || ', S.H., M.H.';
-    email := lower(first_names[idx_first]) || '.' || lower(last_names[idx_last]) || i || '@lawyer.finpro.id';
+    email := lower(first_names[idx_first]) || '.' || lower(last_names[idx_last]) || i || '@lawyer.ydalawoffice.id';
 
     insert into public.users (id, email, role, status, created_at)
     values (uid, email, 'lawyer', 'active', now() - (random() * 365 * interval '1 day'))

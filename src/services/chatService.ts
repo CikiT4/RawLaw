@@ -1,7 +1,7 @@
 import { requireSupabase } from '../supabaseClient';
 
-const LOCAL_SESSIONS_KEY = 'finprose_ai_sessions';
-const LOCAL_MESSAGES_KEY = 'finprose_ai_messages';
+const LOCAL_SESSIONS_KEY = 'yda_ai_sessions';
+const LOCAL_MESSAGES_KEY = 'yda_ai_messages';
 
 function readLocal<T>(key: string, fallback: T): T {
   try {

@@ -12,7 +12,7 @@
 | Branding migration | PASS | FINPROSE/FinPro/RawLaw → YDA LAW OFFICE & Partners |
 | Rusdi AI name preserved | PASS | Unchanged across UI |
 | Toliver → Client (UI) | PASS | Internal DB role `toliver` retained for compatibility |
-| i18n (id/en/ja/zh) | PASS | Locale files updated; language persists via `finprose_lang` |
+| i18n (id/en/ja/zh) | PASS | Locale files updated; language persists via `yda_lang` |
 | Hardcoded dashboard data removed | PASS | Fallbacks return empty arrays; live Supabase only |
 | Payment gate | PASS (code) | `canAccessConsultationSession` blocks chat/meeting until paid |
 | Glassmorphism payment popup | PASS (code) | Implemented in `PaymentPage.tsx` |
@@ -38,7 +38,7 @@
 
 ## Multilingual
 
-- `GlobalLanguageSwitcher`: persists selection to `localStorage.finprose_lang`
+- `GlobalLanguageSwitcher`: persists selection to `localStorage.yda_lang`
 - Rusdi AI receives `language` param from stored preference
 - All 4 locale JSON files updated with YDA branding
 

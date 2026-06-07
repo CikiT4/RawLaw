@@ -1,6 +1,12 @@
 {
-  "name": "Raw Law - Lawyer Consultation",
-  "description": "A premium legal consultation platform connecting clients with elite lawyers, featuring AI-powered case summaries and seamless scheduling.",
+  "name": "YDA LAW OFFICE & Partners",
+  "description": "Premium legal consultation platform with Rusdi AI, lawyer booking, manual payments, and case document vault.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": [
+    "Rusdi AI legal assistant",
+    "Lawyer search and booking",
+    "Manual payment verification",
+    "Consultation chat and meetings",
+    "Document vault"
+  ]
 }

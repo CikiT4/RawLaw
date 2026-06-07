@@ -486,7 +486,7 @@ func createMidtransSnapToken(orderID string, amount int, method string, customer
 				"id":       orderID,
 				"price":    amount,
 				"quantity": 1,
-				"name":     "Konsultasi hukum FINPROSE",
+				"name":     "Konsultasi hukum YDA LAW OFFICE & Partners",
 			},
 		},
 		"credit_card": map[string]interface{}{
@@ -570,7 +570,7 @@ func mapMidtransStatus(notification MidtransNotification) string {
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{
 		"status":  "success",
-		"message": "FINPROSE backend is running with Supabase runtime.",
+		"message": "YDA LAW OFFICE & Partners backend is running with Supabase runtime.",
 	})
 }
 
@@ -762,8 +762,8 @@ func createPaymentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	customerName := "Klien FINPROSE"
-	customerEmail := "client@finprose.local"
+	customerName := "Klien YDA LAW OFFICE & Partners"
+	customerEmail := "client@ydalawoffice.local"
 	customerPhone := ""
 	var profiles []SupabaseProfile
 	if err := supabaseREST(http.MethodGet, "profiles?id=eq."+req.ClientID+"&select=id,full_name,email,phone", nil, &profiles); err == nil && len(profiles) > 0 {
@@ -1319,7 +1319,7 @@ func aiChatHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 4. Create system prompt
-	systemPrompt := fmt.Sprintf(`Anda adalah FINPROSE AI, asisten hukum digital Indonesia (RAW AI).
+	systemPrompt := fmt.Sprintf(`Anda adalah Rusdi AI, asisten hukum digital Indonesia (RAW AI).
 Tugas Anda:
 - Menjelaskan masalah hukum secara umum
 - Membantu brainstorming kasus
@@ -1435,7 +1435,7 @@ func aiCaseAnalysisHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	systemPrompt := `Anda adalah FINPROSE AI, spesialis analisis kasus hukum Indonesia (RAW AI).
+	systemPrompt := `Anda adalah Rusdi AI, spesialis analisis kasus hukum Indonesia (RAW AI).
 Tugas Anda adalah menganalisis fakta kasus yang diberikan pengguna dan menyusunnya menjadi laporan terstruktur.
 Anda BUKAN pengacara/advokat berlisensi. Jangan menjamin hasil perkara, jangan memberikan kepastian hukum, dan jangan mengarang dasar hukum atau pasal yang tidak ada.
 
@@ -1457,7 +1457,7 @@ Risiko yang Perlu Diperhatikan:
 [Risiko finansial, risiko reputasi, risiko laporan balik, atau kedaluwarsa gugatan jika ada]
 
 Rekomendasi:
-[Saran tindak lanjut penutup, seperti mendesak pengguna untuk berkonsultasi langsung dengan advokat profesional berlisensi di platform FINPROSE untuk analisis yang valid dan berkuasa hukum]`
+[Saran tindak lanjut penutup, seperti mendesak pengguna untuk berkonsultasi langsung dengan advokat profesional berlisensi di platform YDA LAW OFFICE & Partners untuk analisis yang valid dan berkuasa hukum]`
 
 	contents := []GeminiContent{
 		{
@@ -1527,7 +1527,7 @@ func aiLawyerRecommendationHandler(w http.ResponseWriter, r *http.Request) {
 
 	lawyerCtxBytes, _ := json.Marshal(lawyerContext)
 
-	systemPrompt := fmt.Sprintf(`Anda adalah FINPROSE AI, sistem pemurni rekomendasi lawyer Indonesia (RAW AI).
+	systemPrompt := fmt.Sprintf(`Anda adalah Rusdi AI, sistem pemurni rekomendasi lawyer Indonesia (RAW AI).
 Tugas Anda adalah menganalisis permasalahan hukum pengguna, mencocokkannya dengan keahlian pengacara terdaftar, dan merekomendasikan maksimal 3 lawyer terverifikasi yang paling cocok.
 
 Batasan:
@@ -1662,7 +1662,7 @@ func main() {
 
 	port := ":5000"
 	fmt.Printf("=================================\n")
-	fmt.Printf("FINPROSE backend is running\n")
+	fmt.Printf("YDA LAW OFFICE & Partners backend is running\n")
 	fmt.Printf("URL: http://localhost%s\n", port)
 	fmt.Printf("Database: Supabase\n")
 	fmt.Printf("=================================\n")

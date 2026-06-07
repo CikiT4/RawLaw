@@ -34,7 +34,7 @@ RusdiWidget / RusdiPage
 ## Fixes Applied
 
 1. **FAB not clickable** — Parent container `pointer-events-none`; FAB `pointer-events-auto` + `z-[120]`
-2. **Language persistence** — `GlobalLanguageSwitcher` saves `finprose_lang`
+2. **Language persistence** — `GlobalLanguageSwitcher` saves `yda_lang`
 3. **Branding in AI prompts** — FINPROSE references replaced with YDA LAW OFFICE & Partners
 
 ## Error Handling

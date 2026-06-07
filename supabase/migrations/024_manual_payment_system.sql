@@ -70,15 +70,15 @@ create policy "Lawyer or admin insert verification logs"
 
 insert into public.payment_method_configs (method_type, provider_code, display_name, account_name, account_number, phone_number, sort_order)
 values
-  ('bank_transfer', 'bca', 'BCA', 'PT FinPro Legal Indonesia', '1234567890', null, 1),
-  ('bank_transfer', 'bni', 'BNI', 'PT FinPro Legal Indonesia', '9876543210', null, 2),
-  ('bank_transfer', 'bri', 'BRI', 'PT FinPro Legal Indonesia', '5555666677', null, 3),
-  ('bank_transfer', 'mandiri', 'Mandiri', 'PT FinPro Legal Indonesia', '1122334455', null, 4),
-  ('ewallet', 'gopay', 'GoPay', 'FinPro Legal', '081234567890', '081234567890', 1),
-  ('ewallet', 'ovo', 'OVO', 'FinPro Legal', '081234567891', '081234567891', 2),
-  ('ewallet', 'dana', 'DANA', 'FinPro Legal', '081234567892', '081234567892', 3),
-  ('ewallet', 'shopeepay', 'ShopeePay', 'FinPro Legal', '081234567893', '081234567893', 4),
-  ('qris', 'qris', 'QRIS Demo', 'FinPro Legal', null, null, 1)
+  ('bank_transfer', 'bca', 'BCA', 'YDA LAW OFFICE & Partners', '1234567890', null, 1),
+  ('bank_transfer', 'bni', 'BNI', 'YDA LAW OFFICE & Partners', '9876543210', null, 2),
+  ('bank_transfer', 'bri', 'BRI', 'YDA LAW OFFICE & Partners', '5555666677', null, 3),
+  ('bank_transfer', 'mandiri', 'Mandiri', 'YDA LAW OFFICE & Partners', '1122334455', null, 4),
+  ('ewallet', 'gopay', 'GoPay', 'YDA LAW OFFICE & Partners', '081234567890', '081234567890', 1),
+  ('ewallet', 'ovo', 'OVO', 'YDA LAW OFFICE & Partners', '081234567891', '081234567891', 2),
+  ('ewallet', 'dana', 'DANA', 'YDA LAW OFFICE & Partners', '081234567892', '081234567892', 3),
+  ('ewallet', 'shopeepay', 'ShopeePay', 'YDA LAW OFFICE & Partners', '081234567893', '081234567893', 4),
+  ('qris', 'qris', 'QRIS Demo', 'YDA LAW OFFICE & Partners', null, null, 1)
 on conflict (method_type, provider_code) do nothing;
 
 do $$

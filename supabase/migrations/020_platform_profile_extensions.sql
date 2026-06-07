@@ -1,5 +1,5 @@
 -- Migration: 020_platform_profile_extensions.sql
--- Extended lawyer/client fields + compatibility views for FINPROSE demo platform.
+-- Extended lawyer/client fields + compatibility views for YDA LAW OFFICE & Partners demo platform.
 
 alter table public.lawyers
   add column if not exists gender text,

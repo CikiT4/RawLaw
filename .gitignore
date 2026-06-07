@@ -14,3 +14,8 @@ coverage/
 backend/*.exe
 backend/*.exe~
 .git_disabled/
+
+# Local scratch / archive
+archive/
+*.tmp
+*.bak

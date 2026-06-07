@@ -53,7 +53,7 @@ async function seedOriginalDummies() {
          await supabase.from('lawyer_profiles').upsert({
             user_id: authUser.id,
             specialty: 'Hukum Bisnis',
-            description: 'Advokat FINPROSE',
+            description: 'Advokat YDA LAW OFFICE & Partners',
             experience_years: 5,
             consultation_price: 150000,
             verification_status: 'verified'
@@ -63,7 +63,7 @@ async function seedOriginalDummies() {
             id: authUser.id,
             name: u.name,
             specialty: 'Hukum Bisnis',
-            description: 'Advokat FINPROSE',
+            description: 'Advokat YDA LAW OFFICE & Partners',
             experience_years: 5,
             consultation_price: 150000,
             image: '/lawyer1.png',

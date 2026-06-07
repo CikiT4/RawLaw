@@ -16,7 +16,7 @@ const supabase = createClient(url, key);
 const filePath = process.argv[2];
 
 if (!filePath) {
-  console.error("Harap masukkan nama file CSV. Contoh: node upload_csv.cjs data_hukum_perdata.csv");
+  console.error('Harap masukkan nama file CSV. Contoh: node scripts/dev/upload-csv.cjs data/knowledge-base/daftar_pengadilan.csv');
   process.exit(1);
 }
 

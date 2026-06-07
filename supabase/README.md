@@ -1,4 +1,4 @@
-# FINPROSE Supabase Setup
+# YDA LAW OFFICE & Partners Supabase Setup
 
 1. Buka Supabase Dashboard, buat project baru.
 2. Buka SQL Editor.

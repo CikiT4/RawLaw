@@ -5,7 +5,7 @@ const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SU
 
 async function testLogin() {
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: 'toliver1@example.com',
+    email: 'client1@example.com',
     password: 'password123'
   });
 
@@ -20,8 +20,8 @@ async function testLogin() {
     .from('profiles')
     .upsert({
       id: data.user.id,
-      full_name: 'Toliver 1',
-      email: 'toliver1@example.com',
+      full_name: 'Client 1',
+      email: 'client1@example.com',
       role: 'toliver',
       status: 'active'
     }, { onConflict: 'id' });

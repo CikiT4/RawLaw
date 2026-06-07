@@ -154,7 +154,7 @@ export const HelpPage = ({ onBack }: { onBack: () => void }) => {
               </div>
               <div className="space-y-4">
                  {[
-                   { icon: Mail, label: 'Email Kami', val: 'support@YDA LAW OFFICE & Partners.id' },
+                   { icon: Mail, label: 'Email Kami', val: 'support@ydalawoffice.id' },
                    { icon: MessageCircle, label: 'Live Chat', val: '24/7 Available' },
                    { icon: Phone, label: 'Hotline', val: '+62 21 0000 0000' },
                  ].map(item => (

@@ -1,4 +1,5 @@
-$body = Get-Content -Raw 'F:/FINPROSE/FINPROSE/request_body.json'
+$fixture = Join-Path $PSScriptRoot 'fixtures/request-body.json'
+$body = Get-Content -Raw $fixture
 $apiKey = $env:GEMINI_API_KEY
 if (-not $apiKey) {
   throw 'Set GEMINI_API_KEY before running this script.'

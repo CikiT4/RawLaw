@@ -1,9 +1,10 @@
 $ErrorActionPreference = "Stop"
 
-$root = "G:\FINPROSE"
-$backend = Join-Path $root "backend"
-$backendExe = Join-Path $backend "finprose-backend.exe"
-$vite = Join-Path $root "node_modules\vite\bin\vite.js"
+$root = Split-Path -Parent $PSScriptRoot
+$projectRoot = $PSScriptRoot
+$backend = Join-Path $projectRoot "backend"
+$backendExe = Join-Path $backend "yda-backend.exe"
+$vite = Join-Path $projectRoot "node_modules\vite\bin\vite.js"
 
 function Test-Port {
   param([int] $Port)
@@ -30,24 +31,24 @@ function Start-IfPortClosed {
 if (!(Test-Path $backendExe)) {
   Write-Host "Build backend..."
   Push-Location $backend
-  $env:GOCACHE = Join-Path $root ".gocache"
+  $env:GOCACHE = Join-Path $projectRoot ".gocache"
   New-Item -ItemType Directory -Force -Path $env:GOCACHE | Out-Null
-  go build -o finprose-backend.exe .
+  go build -o yda-backend.exe .
   Pop-Location
 }
 
-Start-IfPortClosed -Port 5000 -Name "FINPROSE Backend" -StartCommand {
-  Start-Process -FilePath "cmd.exe" -ArgumentList "/k", "cd /d G:\FINPROSE\backend && finprose-backend.exe" -WindowStyle Minimized
+Start-IfPortClosed -Port 5000 -Name "YDA LAW OFFICE & Partners Backend" -StartCommand {
+  Start-Process -FilePath "cmd.exe" -ArgumentList "/k", "cd /d `"$backend`" && yda-backend.exe" -WindowStyle Minimized
 }
 
-Start-IfPortClosed -Port 3000 -Name "FINPROSE Frontend" -StartCommand {
-  Start-Process -FilePath "cmd.exe" -ArgumentList "/k", "cd /d G:\FINPROSE && node node_modules\vite\bin\vite.js --port=3000 --host=0.0.0.0" -WindowStyle Minimized
+Start-IfPortClosed -Port 3000 -Name "YDA LAW OFFICE & Partners Frontend" -StartCommand {
+  Start-Process -FilePath "cmd.exe" -ArgumentList "/k", "cd /d `"$projectRoot`" && node `"$vite`" --port=3000 --host=0.0.0.0" -WindowStyle Minimized
 }
 
 Start-Sleep -Seconds 3
 
 Write-Host ""
-Write-Host "FINPROSE siap dibuka:"
+Write-Host "YDA LAW OFFICE & Partners siap dibuka:"
 Write-Host "Frontend : http://localhost:3000"
 Write-Host "Backend  : http://localhost:5000/api/health"
 Write-Host ""

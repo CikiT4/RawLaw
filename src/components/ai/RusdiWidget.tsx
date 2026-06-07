@@ -114,7 +114,7 @@ export function RusdiWidget({ onOpenFullPage, onLoginRequired }: RusdiWidgetProp
     }
 
     // Append user message locally first
-    const language = localStorage.getItem('finprose_lang') || 'id';
+    const language = localStorage.getItem('yda_lang') || localStorage.getItem('finprose_lang') || 'id';
     const tempUserMsg: AIMessage = {
       id: crypto.randomUUID(),
       session_id: activeSessionId,

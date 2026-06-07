@@ -7,7 +7,7 @@ const supabase = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
-const EMAIL = 'rawlaw@gmail.com';
+const EMAIL = 'demo.client@ydalawoffice.id';
 const PASSWORD = '12345678';
 
 async function setupAccount() {

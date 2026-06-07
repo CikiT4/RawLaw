@@ -7,7 +7,7 @@ async function seed() {
   console.log('Seeding dummy database...');
 
   const roles = [
-    { type: 'toliver', count: 10, prefix: 'toliver' },
+    { type: 'toliver', count: 10, prefix: 'client', label: 'Client' },
     { type: 'lawyer', count: 10, prefix: 'lawyer' },
     { type: 'admin', count: 2, prefix: 'admin' }
   ];
@@ -16,7 +16,7 @@ async function seed() {
     for (let i = 1; i <= roleDef.count; i++) {
       const email = `${roleDef.prefix}${i}@example.com`;
       const password = 'password123';
-      const name = `${roleDef.type.charAt(0).toUpperCase() + roleDef.type.slice(1)} ${i}`;
+      const name = `${roleDef.label || roleDef.type.charAt(0).toUpperCase() + roleDef.type.slice(1)} ${i}`;
 
       const { data, error } = await supabase.auth.admin.createUser({
         email,

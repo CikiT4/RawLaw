@@ -47,7 +47,7 @@ export const ChatPage = ({
       : `chat-peer-${Date.now()}-${Math.random().toString(16).slice(2)}`
   );
   const [modal, setModal] = useState<{ title: string; description: string } | null>(null);
-  const fallbackStorageKey = consultationId ? `finprose_chat_fallback_${consultationId}` : '';
+  const fallbackStorageKey = consultationId ? `yda_chat_fallback_${consultationId}` : '';
 
   useEffect(() => {
     if (!consultationId) return;

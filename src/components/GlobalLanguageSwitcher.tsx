@@ -17,7 +17,7 @@ export const GlobalLanguageSwitcher = () => {
 
   const handleLangChange = (langCode: string) => {
     i18n.changeLanguage(langCode);
-    localStorage.setItem('finprose_lang', langCode);
+    localStorage.setItem('yda_lang', langCode);
     setIsOpen(false);
   };
 
