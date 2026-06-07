@@ -82,20 +82,28 @@ ${lawyerContext}`;
 }
 
 async function ensureConversation(conversationId, userId, title) {
-  await supabaseRest('POST', 'ai_conversations?on_conflict=id', {
-    id: conversationId,
-    user_id: userId,
-    title: (title || 'Percakapan Rusdi').slice(0, 120),
-    is_archived: false,
-    updated_at: new Date().toISOString()
-  }).catch(async () => {
-    await supabaseRest('POST', 'ai_conversations', {
+  try {
+    await supabaseRest('POST', 'ai_conversations?on_conflict=id', {
       id: conversationId,
       user_id: userId,
       title: (title || 'Percakapan Rusdi').slice(0, 120),
-      is_archived: false
+      is_archived: false,
+      updated_at: new Date().toISOString()
     });
-  });
+    return true;
+  } catch {
+    try {
+      await supabaseRest('POST', 'ai_conversations', {
+        id: conversationId,
+        user_id: userId,
+        title: (title || 'Percakapan Rusdi').slice(0, 120),
+        is_archived: false
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }
 
 async function loadConversationHistory(conversationId) {
@@ -113,7 +121,8 @@ async function loadConversationHistory(conversationId) {
 }
 
 async function persistTurn({ conversationId, userId, userMessage, assistantMessage, title }) {
-  await ensureConversation(conversationId, userId, title || userMessage.slice(0, 60));
+  const conversationReady = await ensureConversation(conversationId, userId, title || userMessage.slice(0, 60));
+  if (!conversationReady) return false;
 
   try {
     await supabaseRest('POST', 'ai_messages', {
@@ -127,24 +136,28 @@ async function persistTurn({ conversationId, userId, userMessage, assistantMessa
       content: assistantMessage
     });
   } catch {
-    await supabaseRest('POST', 'ai_chat_history', {
-      session_id: conversationId,
-      user_id: userId,
-      role: 'user',
-      message: userMessage
-    }).catch(() => null);
-    await supabaseRest('POST', 'ai_chat_history', {
-      session_id: conversationId,
-      user_id: userId,
-      role: 'assistant',
-      message: assistantMessage
-    }).catch(() => null);
+    const legacySaved = await Promise.all([
+      supabaseRest('POST', 'ai_chat_history', {
+        session_id: conversationId,
+        user_id: userId,
+        role: 'user',
+        message: userMessage
+      }).catch(() => null),
+      supabaseRest('POST', 'ai_chat_history', {
+        session_id: conversationId,
+        user_id: userId,
+        role: 'assistant',
+        message: assistantMessage
+      }).catch(() => null)
+    ]);
+    if (!legacySaved.some(Boolean)) return false;
   }
 
   await supabaseRest('PATCH', `ai_conversations?id=eq.${encodeURIComponent(conversationId)}`, {
     title: (title || userMessage.slice(0, 60)).slice(0, 120),
     updated_at: new Date().toISOString()
   }).catch(() => null);
+  return true;
 }
 
 export default async function handler(req, res) {
@@ -239,18 +252,24 @@ export default async function handler(req, res) {
       ? `[Mengirim file: ${inlineData.name}]\n${message}`.trim()
       : message;
 
-    await persistTurn({
-      conversationId: activeConversationId,
-      userId,
-      userMessage: displayUserMessage,
-      assistantMessage: aiResponse,
-      title: message.slice(0, 60)
-    });
+    let persisted = false;
+    try {
+      persisted = await persistTurn({
+        conversationId: activeConversationId,
+        userId,
+        userMessage: displayUserMessage,
+        assistantMessage: aiResponse,
+        title: message.slice(0, 60)
+      });
+    } catch (persistError) {
+      console.error('[rusdi/chat] persist failed (non-fatal):', persistError);
+    }
 
     sendJson(res, 200, {
       response: aiResponse,
       sessionId: activeConversationId,
-      conversationId: activeConversationId
+      conversationId: activeConversationId,
+      persisted
     });
   } catch (error) {
     console.error('[rusdi/chat]', error);
