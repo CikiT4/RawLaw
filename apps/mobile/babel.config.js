@@ -2,8 +2,7 @@ module.exports = function (api) {
   api.cache(true);
   return {
     presets: [
-      ['babel-preset-expo', { jsxImportSource: 'nativewind' }],
-      'nativewind/babel'
+      ['babel-preset-expo', { jsxImportSource: 'nativewind' }]
     ],
     plugins: [
       [
@@ -12,10 +11,15 @@ module.exports = function (api) {
           root: ['./src'],
           alias: {
             '@shared': '../../src',
+            // Redirect any web supabaseClient imports from shared modules to the mobile adapter
+            '../../src/supabaseClient': './src/lib/supabaseClient',
+            '../supabaseClient': './src/lib/supabaseClient',
+            '../../src/supabaseAuth': './src/lib/supabaseAuth',
+            '../supabaseAuth': './src/lib/supabaseAuth'
           },
         },
       ],
-      'babel-plugin-transform-import-meta',
+      'react-native-reanimated/plugin',
     ],
   };
 };
