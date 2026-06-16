@@ -72,6 +72,8 @@ export default async function handler(req, res) {
     sendJson(res, 200, updated?.[0] || { id: consultationId, status });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Status konsultasi gagal diperbarui.';
-    sendJson(res, message.includes('ditolak') || message.includes('valid') || message.includes('aktif') ? 403 : 502, { error: message });
+    const isAuthError = message.includes('Sesi tidak valid') || message.includes('ditolak') || message.includes('Akun tidak aktif');
+    if (!isAuthError) console.error('[consultations/status]', message);
+    sendJson(res, isAuthError ? 403 : 502, { error: message });
   }
 }

@@ -156,6 +156,11 @@ export default async function handler(req, res) {
     sendJson(res, 405, { error: 'Method not allowed' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Akses admin gagal.';
-    sendJson(res, message.includes('ditolak') || message.includes('valid') ? 403 : 502, { error: message });
+    const isAuthError = message.includes('Sesi admin tidak valid') || message.includes('Akses admin ditolak') || message.includes('ditolak') || message.includes('Akun tidak aktif');
+    const statusCode = isAuthError ? 403 : 502;
+    if (!isAuthError) {
+      console.error('[admin]', error instanceof Error ? error.message : error, error instanceof Error ? error.stack : '');
+    }
+    sendJson(res, statusCode, { error: message });
   }
 }

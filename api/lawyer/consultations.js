@@ -69,6 +69,8 @@ export default async function handler(req, res) {
     sendJson(res, 200, rows || []);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Konsultasi advokat gagal dimuat.';
-    sendJson(res, message.includes('ditolak') || message.includes('valid') ? 403 : 502, { error: message });
+    const isAuthError = message.includes('Sesi tidak valid') || message.includes('ditolak') || message.includes('Akun tidak aktif');
+    if (!isAuthError) console.error('[lawyer/consultations]', message);
+    sendJson(res, isAuthError ? 403 : 502, { error: message });
   }
 }

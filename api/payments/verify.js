@@ -22,21 +22,31 @@ async function requireActor(req) {
   const token = bearerToken(req);
   const url = supabaseUrl();
   const serviceKey = supabaseServiceKey();
-  if (!token || !url || !serviceKey) throw new Error('Sesi tidak valid.');
+  if (!token || !url || !serviceKey) {
+    console.error('[payments/verify/auth] Missing:', { hasToken: !!token, hasUrl: !!url, hasServiceKey: !!serviceKey });
+    throw new Error('Sesi tidak valid.');
+  }
 
   const admin = createClient(url, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false }
   });
   const { data, error } = await admin.auth.getUser(token);
-  if (error || !data.user?.id) throw new Error('Sesi tidak valid.');
+  if (error || !data.user?.id) {
+    console.error('[payments/verify/auth] getUser failed:', error?.message || 'no user returned');
+    throw new Error('Sesi tidak valid.');
+  }
 
   const profiles = await supabaseRest(
     'GET',
     `profiles?id=eq.${encodeURIComponent(data.user.id)}&select=id,full_name,role,status`
   );
   const profile = profiles?.[0];
-  if (!profile || profile.status !== 'active') throw new Error('Akun tidak aktif.');
+  if (!profile || profile.status !== 'active') {
+    console.error('[payments/verify/auth] Profile check failed:', { userId: data.user.id, hasProfile: !!profile, status: profile?.status });
+    throw new Error('Akun tidak aktif.');
+  }
   if (!['lawyer', 'admin'].includes(profile.role)) {
+    console.error('[payments/verify/auth] Role denied:', { userId: data.user.id, role: profile.role });
     throw new Error('Hanya advokat atau admin yang dapat memverifikasi pembayaran.');
   }
 
@@ -175,6 +185,11 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Verifikasi gagal.';
-    sendJson(res, message.includes('valid') || message.includes('ditolak') || message.includes('Hanya') ? 403 : 502, { error: message });
+    const isAuthError = message.includes('Sesi tidak valid') || message.includes('Akun tidak aktif') || message.includes('ditolak') || message.includes('Hanya advokat') || message.includes('bukan advokat') || message.includes('Override hanya');
+    const statusCode = isAuthError ? 403 : 502;
+    if (!isAuthError) {
+      console.error('[payments/verify]', error instanceof Error ? error.message : error, error instanceof Error ? error.stack : '');
+    }
+    sendJson(res, statusCode, { error: message });
   }
 }

@@ -207,7 +207,12 @@ export async function insertAppPayment(row) {
 export async function patchAppPayment(paymentId, patch) {
   const encoded = encodeURIComponent(paymentId);
   const legacyPatch = buildLegacyPaymentPatch(patch);
-  const extendedPatch = { ...patch, updated_at: legacyPatch.updated_at };
+  const safeStatus = patch.status ? resolvePaymentStatus(patch.status) : undefined;
+  const extendedPatch = {
+    ...patch,
+    ...(safeStatus ? { status: safeStatus } : {}),
+    updated_at: legacyPatch.updated_at
+  };
 
   try {
     return await supabaseRest('PATCH', `app_payments?id=eq.${encoded}`, legacyPatch);

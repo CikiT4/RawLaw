@@ -29,20 +29,29 @@ async function requireUser(req) {
   const token = bearerToken(req);
   const url = supabaseUrl();
   const serviceKey = supabaseServiceKey();
-  if (!token || !url || !serviceKey) throw new Error('Sesi tidak valid.');
+  if (!token || !url || !serviceKey) {
+    console.error('[payments/auth] Missing:', { hasToken: !!token, hasUrl: !!url, hasServiceKey: !!serviceKey });
+    throw new Error('Sesi tidak valid.');
+  }
 
   const admin = createClient(url, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false }
   });
   const { data, error } = await admin.auth.getUser(token);
-  if (error || !data.user?.id) throw new Error('Sesi tidak valid.');
+  if (error || !data.user?.id) {
+    console.error('[payments/auth] getUser failed:', error?.message || 'no user returned');
+    throw new Error('Sesi tidak valid.');
+  }
 
   const profiles = await supabaseRest(
     'GET',
     `profiles?id=eq.${encodeURIComponent(data.user.id)}&select=id,full_name,email,role,status`
   );
   const profile = profiles?.[0];
-  if (!profile || profile.status !== 'active') throw new Error('Akun tidak aktif.');
+  if (!profile || profile.status !== 'active') {
+    console.error('[payments/auth] Profile check failed:', { userId: data.user.id, hasProfile: !!profile, status: profile?.status });
+    throw new Error('Akun tidak aktif.');
+  }
 
   return { userId: data.user.id, profile };
 }
@@ -198,24 +207,29 @@ export default async function handler(req, res) {
       if (!payment) {
         const invoiceNumber = newInvoiceNumber();
         const paymentReference = newPaymentRef();
-        const inserted = await insertAppPayment({
-          consultation_id: consultationId,
-          client_id: consultation.client_id || userId,
-          amount: baseAmount,
-          admin_fee: adminFee,
-          tax_amount: taxAmount,
-          platform_fee: platformFee,
-          total_amount: totalAmount,
-          method: body.method ? normalizePaymentMethod(body.method) : null,
-          payment_sub_method: body.subMethod ? normalizeSubMethod(body.method, body.subMethod) : null,
-          provider: 'Manual Verification',
-          status: resolvePaymentStatus('pending'),
-          invoice_number: invoiceNumber,
-          payment_reference: paymentReference,
-          external_reference: paymentReference,
-          due_date: invoiceDueDate()
-        });
-        payment = inserted?.[0] || await fetchAppPaymentByConsultation(consultationId);
+        try {
+          const inserted = await insertAppPayment({
+            consultation_id: consultationId,
+            client_id: consultation.client_id || userId,
+            amount: baseAmount,
+            admin_fee: adminFee,
+            tax_amount: taxAmount,
+            platform_fee: platformFee,
+            total_amount: totalAmount,
+            method: body.method ? normalizePaymentMethod(body.method) : null,
+            payment_sub_method: body.subMethod ? normalizeSubMethod(body.method, body.subMethod) : null,
+            provider: 'Manual Verification',
+            status: 'pending',
+            invoice_number: invoiceNumber,
+            payment_reference: paymentReference,
+            external_reference: paymentReference,
+            due_date: invoiceDueDate()
+          });
+          payment = inserted?.[0] || await fetchAppPaymentByConsultation(consultationId);
+        } catch (insertError) {
+          console.error('[payments/create-invoice] Insert failed:', insertError instanceof Error ? insertError.message : insertError);
+          throw insertError;
+        }
         await patchConsultationStatus(consultationId, 'pending').catch(() => null);
 
         if (consultation.lawyer_id) {
@@ -311,6 +325,7 @@ export default async function handler(req, res) {
 
       let proofUrl = '';
       if (uploadError) {
+        console.error('[payments/upload-proof] Storage upload failed (using data URI fallback):', uploadError.message || uploadError);
         proofUrl = `data:${mimeType};base64,${fileBase64.slice(0, 120)}...`;
       } else {
         const { data: urlData } = admin.storage.from('payment-proofs').getPublicUrl(storagePath);
@@ -374,6 +389,11 @@ export default async function handler(req, res) {
     sendJson(res, 400, { error: 'Aksi payment tidak valid.' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Payment gagal diproses.';
-    sendJson(res, message.includes('valid') || message.includes('ditolak') ? 403 : 502, { error: message });
+    const isAuthError = message.includes('Sesi tidak valid') || message.includes('Akun tidak aktif') || message.includes('ditolak') || message.includes('bukan milik') || message.includes('hanya klien');
+    const statusCode = isAuthError ? 403 : 502;
+    if (!isAuthError) {
+      console.error('[payments]', error instanceof Error ? error.message : error, error instanceof Error ? error.stack : '');
+    }
+    sendJson(res, statusCode, { error: message });
   }
 }
