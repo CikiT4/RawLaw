@@ -224,7 +224,7 @@ export const LawyerDashboard = ({
   }, [user.id]);
 
   const refreshPendingPayments = () => {
-    fetchPendingPaymentVerifications('waiting_verification')
+    fetchPendingPaymentVerifications('pending')
       .then(setPendingPayments)
       .catch(() => setPendingPayments([]));
   };

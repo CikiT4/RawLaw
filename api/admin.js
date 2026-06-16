@@ -36,7 +36,8 @@ async function verifyLawyer(lawyerUserId) {
 }
 
 async function updatePaymentStatus(paymentId, status, adminId, notes = '') {
-  const patch = { status };
+  const dbStatus = status === 'rejected' ? 'failed' : status;
+  const patch = { status: dbStatus };
   if (status === 'paid') {
     patch.paid_at = new Date().toISOString();
     patch.verified_by = adminId;

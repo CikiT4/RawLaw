@@ -1325,7 +1325,7 @@ export function verifyPayment(payload: {
   });
 }
 
-export function fetchPendingPaymentVerifications(status = 'waiting_verification') {
+export function fetchPendingPaymentVerifications(status = 'pending') {
   return request<ClientPaymentRow[]>(`/payments/verify?status=${encodeURIComponent(status)}`);
 }
 

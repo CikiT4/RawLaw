@@ -258,7 +258,7 @@ export const AdminDashboard = ({ onLogout }: { onLogout: () => void }) => {
     }
   };
 
-  const handlePaymentStatus = async (id: string, status: 'pending' | 'paid' | 'failed' | 'refunded' | 'expired' | 'rejected' | 'waiting_verification', notes?: string) => {
+  const handlePaymentStatus = async (id: string, status: 'pending' | 'paid' | 'failed' | 'refunded' | 'expired' | 'rejected', notes?: string) => {
     try {
       await updateAdminPaymentStatus(id, status, notes);
       await refreshAdminData();
@@ -608,7 +608,7 @@ export const AdminDashboard = ({ onLogout }: { onLogout: () => void }) => {
                   </div>
                   <div className="flex flex-wrap items-center justify-end gap-2">
                     <Pill value={item.status} />
-                    {item.status === 'waiting_verification' && (
+                    {item.status === 'pending' && (item as AdminTransactionRow & { payment_proof_url?: string }).payment_proof_url && (
                       <>
                         <button onClick={() => handleAdminVerify(item.id, 'override_approve')} className="rounded-lg bg-emerald-50 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-emerald-700 hover:bg-emerald-600 hover:text-white">
                           Approve
@@ -618,7 +618,7 @@ export const AdminDashboard = ({ onLogout }: { onLogout: () => void }) => {
                         </button>
                       </>
                     )}
-                    {item.status !== 'paid' && item.status !== 'waiting_verification' && (
+                    {item.status !== 'paid' && !(item.status === 'pending' && (item as AdminTransactionRow & { payment_proof_url?: string }).payment_proof_url) && (
                       <button onClick={() => handlePaymentStatus(item.id, 'paid')} className="rounded-lg bg-emerald-50 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-emerald-700 hover:bg-emerald-600 hover:text-white">
                         Tandai Paid
                       </button>

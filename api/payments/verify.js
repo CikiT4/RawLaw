@@ -139,7 +139,7 @@ export default async function handler(req, res) {
       }
     } else {
       await patchAppPayment(paymentId, {
-        status: 'rejected',
+        status: 'failed',
         verified_by: userId,
         verified_at: now,
         rejection_reason: notes || 'Bukti pembayaran ditolak. Silakan unggah ulang.'

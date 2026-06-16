@@ -322,7 +322,7 @@ export default async function handler(req, res) {
       await patchAppPayment(paymentId, {
         payment_proof_url: proofUrl,
         proof_uploaded_at: now,
-        status: 'waiting_verification',
+        status: 'pending',
         payment_reference: payment.payment_reference || payment.external_reference || newPaymentRef()
       });
 

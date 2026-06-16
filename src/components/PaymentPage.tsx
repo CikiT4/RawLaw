@@ -249,7 +249,7 @@ export const PaymentPage = ({
   const instructions = invoice?.instructions;
   const displayPayments = useMemo(() => payments, [payments]);
   const canUploadProof = invoice && ['waiting_payment', 'rejected', 'pending'].includes(invoice.status);
-  const awaitingVerification = invoice?.status === 'waiting_verification';
+  const awaitingVerification = invoice?.status === 'pending' && !!(invoice as Record<string, unknown>)?.payment_proof_url;
 
   return (
     <div className="min-h-screen bg-brand-gray-50 flex flex-col font-sans">
