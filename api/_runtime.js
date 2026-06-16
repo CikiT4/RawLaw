@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { INVOICE_DUE_DAYS } from './paymentConfig.js';
+import { INVOICE_DUE_DAYS, resolvePaymentStatus } from './paymentConfig.js';
 
 const jsonHeaders = {
   'Content-Type': 'application/json',
@@ -149,7 +149,7 @@ function buildLegacyPaymentRow(row) {
     total_amount: row.total_amount,
     method: row.method || 'bank_transfer',
     provider: row.payment_sub_method || row.provider || 'Manual Verification',
-    status: row.status || 'pending',
+    status: resolvePaymentStatus(row.status || 'pending'),
     paid_at: row.paid_at || null,
     external_reference: row.external_reference || row.payment_reference || row.invoice_number || row.payment_proof_url || null
   };
@@ -172,7 +172,7 @@ function buildExtendedPaymentRow(row) {
 
 function buildLegacyPaymentPatch(patch) {
   const payload = { updated_at: new Date().toISOString() };
-  if (patch.status) payload.status = patch.status;
+  if (patch.status) payload.status = resolvePaymentStatus(patch.status);
   if (patch.method) payload.method = patch.method;
   if (patch.paid_at) payload.paid_at = patch.paid_at;
   if (patch.payment_sub_method) payload.provider = patch.payment_sub_method;
