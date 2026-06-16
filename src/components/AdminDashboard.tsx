@@ -11,11 +11,13 @@ import {
   History,
   Loader2,
   LogOut,
+  Plus,
   RefreshCcw,
   Search,
   ShieldCheck,
   Star,
   TicketCheck,
+  Trash2,
   UserCheck,
   Users
 } from 'lucide-react';
@@ -33,6 +35,14 @@ import {
   updateSupportTicketStatus,
   verifyLawyerAccount,
   verifyPayment,
+  deleteUserAccount,
+  deleteLawyerAccount,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  deleteConsultation,
+  deleteReview,
+  archiveTransaction,
   type AdminClientRow,
   type AdminConsultationRow,
   type AdminSupportTicketRow,
@@ -42,7 +52,7 @@ import {
 import { getAdminDashboardData, getAiUsageStats, getPlatformReviews, getPlatformStats } from '../services/platformData';
 import { useTranslation } from 'react-i18next';
 
-type AdminTab = 'overview' | 'lawyers' | 'payments' | 'cases' | 'history' | 'clients' | 'support' | 'reviews' | 'ai';
+type AdminTab = 'overview' | 'lawyers' | 'payments' | 'cases' | 'history' | 'clients' | 'support' | 'reviews' | 'ai' | 'categories';
 
 const currency = new Intl.NumberFormat('id-ID', {
   style: 'currency',
@@ -64,6 +74,7 @@ const tabItems: Array<{ id: AdminTab; label: string; icon: React.ElementType }> 
   { id: 'cases', label: 'Cases', icon: Gavel },
   { id: 'history', label: 'History', icon: History },
   { id: 'clients', label: 'Clients', icon: Users },
+  { id: 'categories', label: 'Categories', icon: FileText },
   { id: 'reviews', label: 'Reviews', icon: Star },
   { id: 'ai', label: 'Rusdi AI', icon: Activity },
   { id: 'support', label: 'Support', icon: AlertCircle }
@@ -121,6 +132,7 @@ export const AdminDashboard = ({ onLogout }: { onLogout: () => void }) => {
   const [isRefreshing, setIsRefreshing] = useState(true);
   const [supportReply, setSupportReply] = useState<{ ticketId: string; subject: string; response: string } | null>(null);
   const [caseFilter, setCaseFilter] = useState<'all' | 'pending' | 'paid' | 'ongoing' | 'in_review' | 'expired'>('all');
+  const [newCategory, setNewCategory] = useState<{ name: string; description: string } | null>(null);
 
   const openAction = (title: string, description: string) => setModal({ title, description });
 
@@ -162,16 +174,31 @@ export const AdminDashboard = ({ onLogout }: { onLogout: () => void }) => {
     const historyCount = consultations.filter(item => isHistoryStatus(item.status)).length;
     const usePlatform = clients.length < 10;
 
+    const reviewCount = getPlatformReviews().length;
+    const aiUsage = getAiUsageStats();
+    const totalUsers = (usePlatform ? platform.totalLawyers : pendingLawyers.length + platform.totalLawyers) + (usePlatform ? platform.totalClients : clients.length);
+    const monthlyGrowthRate = (() => {
+      const mr = getAdminDashboardData().analytics.monthlyRevenue;
+      if (mr.length < 2) return 0;
+      const current = mr[mr.length - 1].revenue;
+      const previous = mr[mr.length - 2].revenue;
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return Math.round(((current - previous) / previous) * 100);
+    })();
+
     return [
+      { label: 'Total Users', value: String(totalUsers), hint: 'lawyers + clients', icon: Users },
       { label: 'Total Lawyers', value: String(usePlatform ? platform.totalLawyers : pendingLawyers.length + platform.totalLawyers), hint: `${platform.activeLawyers} online now`, icon: ShieldCheck },
       { label: 'Total Clients', value: String(usePlatform ? platform.totalClients : clients.length), hint: `${platform.activeClients} active accounts`, icon: Users },
       { label: 'Total Consultations', value: String(usePlatform ? platform.totalConsultations : consultations.length), hint: `${platform.completedConsultations} completed`, icon: Gavel },
+      { label: 'Total Reviews', value: String(usePlatform ? platform.totalReviews : reviewCount), hint: 'verified client reviews', icon: Star },
       { label: 'Total Transactions', value: String(usePlatform ? platform.totalTransactions : transactions.length), hint: `${paidPayments.length} paid`, icon: CreditCard },
       { label: 'Total Revenue', value: currency.format(usePlatform ? platform.totalRevenue : paidRevenue), hint: 'gross paid volume', icon: CircleDollarSign },
+      { label: 'AI Usage', value: String(aiUsage.conversations + aiUsage.messages), hint: `${aiUsage.conversations} conversations`, icon: Activity },
+      { label: 'Monthly Growth', value: `${monthlyGrowthRate >= 0 ? '+' : ''}${monthlyGrowthRate}%`, hint: 'revenue vs last month', icon: Activity },
       { label: 'Platform Fees', value: currency.format(usePlatform ? platform.totalRevenue * 0.1 : platformFees), hint: 'from paid payments', icon: CreditCard },
       { label: 'Pending Consultations', value: String(usePlatform ? platform.pendingConsultations : casesNeedingOps), hint: 'need attention', icon: Activity },
-      { label: 'Open Support', value: String(openTickets), hint: 'tickets need response', icon: TicketCheck },
-      { label: 'Case History', value: String(historyCount), hint: 'completed/cancelled', icon: History }
+      { label: 'Open Support', value: String(openTickets), hint: 'tickets need response', icon: TicketCheck }
     ];
   }, [clients.length, consultations, pendingLawyers, tickets, transactions]);
 
@@ -426,6 +453,50 @@ export const AdminDashboard = ({ onLogout }: { onLogout: () => void }) => {
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
               <div className="rounded-lg border border-black/10 bg-white p-6">
                 <div className="mb-5 flex items-center justify-between">
+                  <h2 className="font-display text-xl font-bold">Consultation Trends</h2>
+                  <Gavel className="h-5 w-5 text-brand-gray-400" />
+                </div>
+                <div className="space-y-3">
+                  {getAdminDashboardData().analytics.consultationGrowth.map(item => (
+                    <div key={item.month} className="grid grid-cols-[48px_1fr_auto] items-center gap-3">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">{item.month}</span>
+                      <div className="h-2 rounded-full bg-brand-gray-100">
+                        <div className="h-2 rounded-full bg-emerald-600" style={{ width: `${Math.min(100, (item.count / 20) * 100)}%` }} />
+                      </div>
+                      <span className="text-xs font-bold">{item.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-black/10 bg-white p-6">
+                <div className="mb-5 flex items-center justify-between">
+                  <h2 className="font-display text-xl font-bold">Lawyer Performance</h2>
+                  <ShieldCheck className="h-5 w-5 text-brand-gray-400" />
+                </div>
+                <div className="space-y-3">
+                  {getAdminDashboardData().analytics.topLawyers.slice(0, 5).map((item, index) => (
+                    <div key={item.name} className="flex items-center justify-between rounded-lg border border-brand-gray-100 p-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg font-bold text-brand-gray-400">#{index + 1}</span>
+                        <div>
+                          <p className="text-sm font-bold">{item.name}</p>
+                          <p className="text-[10px] font-medium text-brand-gray-500">{item.consultations} consultations</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold">★ {item.rating}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">{currency.format(item.revenue)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+              <div className="rounded-lg border border-black/10 bg-white p-6">
+                <div className="mb-5 flex items-center justify-between">
                   <h2 className="font-display text-xl font-bold">Payment Watchlist</h2>
                   <CreditCard className="h-5 w-5 text-brand-gray-400" />
                 </div>
@@ -498,6 +569,9 @@ export const AdminDashboard = ({ onLogout }: { onLogout: () => void }) => {
                     <button onClick={() => handleRejectLawyer(item.user_id, item.profiles?.full_name || 'Advokat')} className="rounded-lg border border-red-100 bg-red-50 p-3 text-red-700 hover:bg-red-600 hover:text-white" title="Tolak">
                       <Ban className="h-4 w-4" />
                     </button>
+                    <button onClick={async () => { try { await deleteLawyerAccount(item.user_id); await refreshAdminData(); openAction('Advokat Dihapus', `Akun advokat ${item.profiles?.full_name || ''} telah dihapus.`); } catch (error) { openAction('Gagal Hapus', error instanceof Error ? error.message : 'Gagal menghapus advokat.'); } }} className="rounded-lg border border-red-100 bg-red-50 p-3 text-red-700" title="Hapus advokat">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -552,6 +626,11 @@ export const AdminDashboard = ({ onLogout }: { onLogout: () => void }) => {
                     {item.status !== 'rejected' && (
                       <button onClick={() => handlePaymentStatus(item.id, 'rejected', 'Ditolak admin.')} className="rounded-lg bg-red-50 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-red-700 hover:bg-red-600 hover:text-white">
                         Reject
+                      </button>
+                    )}
+                    {(item.status === 'rejected' || item.status === 'failed' || item.status === 'expired') && (
+                      <button onClick={async () => { try { await archiveTransaction(item.id); await refreshAdminData(); openAction('Transaksi Diarsipkan', `Transaksi ${item.invoice_number || item.id.slice(0, 8)} telah diarsipkan.`); } catch (error) { openAction('Gagal Arsip', error instanceof Error ? error.message : 'Gagal mengarsipkan transaksi.'); } }} className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-zinc-700" title="Arsipkan">
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     )}
                   </div>
@@ -610,6 +689,9 @@ export const AdminDashboard = ({ onLogout }: { onLogout: () => void }) => {
                     <button onClick={() => openAction(`Case ${item.id.slice(0, 8)}`, item.notes || 'Tidak ada catatan tambahan.')} className="rounded-lg border border-brand-gray-200 p-3 hover:bg-brand-gray-50" title="Detail">
                       <FileText className="h-4 w-4" />
                     </button>
+                    <button onClick={async () => { try { await deleteConsultation(item.id); await refreshAdminData(); openAction('Konsultasi Dihapus', `Kasus ${item.id.slice(0, 8)} telah dihapus.`); } catch (error) { openAction('Gagal Hapus', error instanceof Error ? error.message : 'Gagal menghapus konsultasi.'); } }} className="rounded-lg border border-red-100 bg-red-50 p-3 text-red-700" title="Hapus konsultasi">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -643,6 +725,9 @@ export const AdminDashboard = ({ onLogout }: { onLogout: () => void }) => {
                     <Pill value={item.status} />
                     <button onClick={() => openAction(`History ${item.id.slice(0, 8)}`, item.notes || 'Konsultasi ini sudah masuk arsip final.')} className="rounded-lg border border-brand-gray-200 p-3 hover:bg-brand-gray-50" title="Detail">
                       <FileText className="h-4 w-4" />
+                    </button>
+                    <button onClick={async () => { try { await deleteConsultation(item.id); await refreshAdminData(); openAction('Arsip Dihapus', `Kasus ${item.id.slice(0, 8)} telah dihapus dari arsip.`); } catch (error) { openAction('Gagal Hapus', error instanceof Error ? error.message : 'Gagal menghapus arsip.'); } }} className="rounded-lg border border-red-100 bg-red-50 p-3 text-red-700" title="Hapus arsip">
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
@@ -679,10 +764,69 @@ export const AdminDashboard = ({ onLogout }: { onLogout: () => void }) => {
                     <button onClick={() => handleClientStatus(item.id, item.status === 'blocked' ? 'active' : 'blocked')} className="rounded-lg border border-red-100 bg-red-50 p-3 text-red-700" title="Block/unblock">
                       <Ban className="h-4 w-4" />
                     </button>
+                    <button onClick={async () => { try { await deleteUserAccount(item.id); await refreshAdminData(); openAction('User Dihapus', `Akun ${item.full_name} telah dihapus.`); } catch (error) { openAction('Gagal Hapus', error instanceof Error ? error.message : 'Gagal menghapus akun.'); } }} className="rounded-lg border border-red-100 bg-red-50 p-3 text-red-700" title="Hapus akun">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               ))}
               {filteredClients.length === 0 && <div className="p-6"><EmptyState title={t('admin.clientsNotFound')} detail="Data klien diambil dari profiles dengan role client." /></div>}
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'categories' && (
+          <section className="rounded-lg border border-black/10 bg-white">
+            <div className="flex items-center justify-between border-b border-brand-gray-100 p-6">
+              <div>
+                <h2 className="font-display text-2xl font-bold">Legal Categories</h2>
+                <p className="mt-1 text-xs font-medium text-brand-gray-500">Kelola kategori hukum yang tersedia di platform.</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Pill value={`${getAdminDashboardData().categories.length} categories`} />
+                <button onClick={() => setNewCategory(newCategory ? null : { name: '', description: '' })} className="flex items-center gap-1.5 rounded-lg border border-brand-black bg-brand-black px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-brand-black/90">
+                  <Plus className="h-3.5 w-3.5" />
+                  Tambah
+                </button>
+              </div>
+            </div>
+            {newCategory && (
+              <div className="border-b border-brand-gray-100 bg-brand-gray-50 p-6">
+                <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
+                  <input value={newCategory.name} onChange={e => setNewCategory({ ...newCategory, name: e.target.value })} placeholder="Nama kategori" className="rounded-lg border border-brand-gray-200 px-4 py-2 text-sm font-medium focus:border-brand-black focus:outline-none" />
+                  <input value={newCategory.description} onChange={e => setNewCategory({ ...newCategory, description: e.target.value })} placeholder="Deskripsi singkat" className="rounded-lg border border-brand-gray-200 px-4 py-2 text-sm font-medium focus:border-brand-black focus:outline-none" />
+                  <div className="flex gap-2">
+                    <button onClick={async () => { if (!newCategory.name.trim()) return; try { await createCategory(newCategory); setNewCategory(null); openAction('Kategori Dibuat', `Kategori ${newCategory.name} berhasil ditambahkan.`); } catch (error) { openAction('Gagal Buat', error instanceof Error ? error.message : 'Gagal membuat kategori.'); } }} className="rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-emerald-700 hover:bg-emerald-100">
+                      Simpan
+                    </button>
+                    <button onClick={() => setNewCategory(null)} className="rounded-lg border border-brand-gray-200 px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-brand-gray-100">
+                      Batal
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="divide-y divide-brand-gray-100">
+              {getAdminDashboardData().categories.map(item => (
+                <div key={item.id} className="grid grid-cols-1 gap-4 p-6 lg:grid-cols-[1.5fr_1fr_auto] lg:items-center">
+                  <div>
+                    <p className="text-sm font-bold">{item.name}</p>
+                    <p className="mt-1 text-xs text-brand-gray-500">{item.description}</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">{item.lawyerCount} lawyers</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">{item.consultationCount} consultations</span>
+                  </div>
+                  <div className="flex items-center justify-end gap-2">
+                    <button onClick={() => openAction(`Edit ${item.name}`, `Kategori ${item.name} memiliki ${item.lawyerCount} advokat dan ${item.consultationCount} konsultasi aktif.`)} className="rounded-lg border border-brand-gray-200 px-3 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-brand-gray-50">
+                      Detail
+                    </button>
+                    <button onClick={async () => { try { await deleteCategory(item.id); openAction('Kategori Dihapus', `Kategori ${item.name} telah dihapus.`); } catch (error) { openAction('Gagal Hapus', error instanceof Error ? error.message : 'Gagal menghapus kategori.'); } }} className="rounded-lg border border-red-100 bg-red-50 p-3 text-red-700" title="Hapus kategori">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
         )}
@@ -706,6 +850,9 @@ export const AdminDashboard = ({ onLogout }: { onLogout: () => void }) => {
                   </div>
                   <div className="flex items-center justify-end gap-2">
                     <Pill value={`${item.rating} stars`} />
+                    <button onClick={async () => { try { await deleteReview(item.id); openAction('Ulasan Dihapus', `Ulasan dari ${item.clientName} telah dihapus.`); } catch (error) { openAction('Gagal Hapus', error instanceof Error ? error.message : 'Gagal menghapus ulasan.'); } }} className="rounded-lg border border-red-100 bg-red-50 p-3 text-red-700" title="Hapus ulasan">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               ))}

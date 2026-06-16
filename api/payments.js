@@ -322,30 +322,27 @@ export default async function handler(req, res) {
       await patchAppPayment(paymentId, {
         payment_proof_url: proofUrl,
         proof_uploaded_at: now,
-        status: 'paid',
-        paid_at: now,
-        verified_at: now,
-        verified_by: userId,
+        status: 'waiting_verification',
         payment_reference: payment.payment_reference || payment.external_reference || newPaymentRef()
       });
 
-      await patchConsultationStatus(payment.consultation_id, 'paid');
+      await patchConsultationStatus(payment.consultation_id, 'pending');
 
       await insertVerificationLog({
         transaction_id: paymentId,
         actor_id: userId,
-        actor_role: 'system',
-        action: 'auto_verified',
-        notes: `Bukti pembayaran diunggah dan diverifikasi otomatis: ${safeName}`
+        actor_role: 'client',
+        action: 'proof_submitted',
+        notes: `Bukti pembayaran diunggah dan menunggu verifikasi: ${safeName}`
       }).catch(() => null);
 
       const consultation = await getConsultation(payment.consultation_id);
       if (consultation?.lawyer_id) {
         await insertNotification(
           consultation.lawyer_id,
-          'Pembayaran Berhasil',
-          `Invoice ${payment.invoice_number || payment.external_reference} telah dibayar dan sesi konsultasi aktif.`,
-          'success'
+          'Bukti Pembayaran Baru',
+          `Invoice ${payment.invoice_number || payment.external_reference} menunggu verifikasi advokat/admin.`,
+          'info'
         );
       }
 
@@ -367,9 +364,9 @@ export default async function handler(req, res) {
 
       sendJson(res, 200, {
         ...invoicePayload,
-        message: 'Payment Successful',
-        consultationStatus: 'paid',
-        autoVerified: true
+        message: 'Bukti pembayaran dikirim dan menunggu verifikasi.',
+        consultationStatus: 'pending',
+        autoVerified: false
       });
       return;
     }

@@ -5,7 +5,7 @@ import {
   Plus, Search, Bell, MoreHorizontal, 
   Sparkles, LogOut, DollarSign, Users, Clock, 
   MessageSquare, ChevronRight, ArrowUpRight, 
-  Upload, CheckCircle2, FileCheck, Briefcase
+  Upload, CheckCircle2, FileCheck, Briefcase, Star
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ActionModal } from './ActionModal';
@@ -385,7 +385,7 @@ export const LawyerDashboard = ({
             </section>
 
             {/* Top Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
               <div className="p-10 bg-brand-black text-white rounded-[48px] relative overflow-hidden shadow-2xl shadow-black/20">
                 <div className="relative z-10 space-y-8">
                    <div className="p-3 bg-zinc-800 rounded-2xl w-fit">
@@ -413,6 +413,30 @@ export const LawyerDashboard = ({
                  </div>
               </div>
 
+              <div className="p-10 bg-brand-gray-50 rounded-[48px] border border-brand-gray-100 flex flex-col justify-between">
+                 <div className="flex justify-between items-start">
+                    <div className="p-3 bg-white rounded-2xl shadow-sm">
+                       <CheckCircle2 className="w-6 h-6 text-brand-black" />
+                    </div>
+                 </div>
+                 <div className="mt-8">
+                    <p className="text-[10px] font-bold text-brand-gray-400 uppercase tracking-widest mb-2">Total Konsultasi</p>
+                    <h3 className="text-5xl font-bold font-display">{consultations.length}</h3>
+                 </div>
+              </div>
+
+              <div className="p-10 bg-brand-gray-50 rounded-[48px] border border-brand-gray-100 flex flex-col justify-between">
+                 <div className="flex justify-between items-start">
+                    <div className="p-3 bg-white rounded-2xl shadow-sm">
+                       <Star className="w-6 h-6 text-amber-500" />
+                    </div>
+                 </div>
+                 <div className="mt-8">
+                    <p className="text-[10px] font-bold text-brand-gray-400 uppercase tracking-widest mb-2">Rating Rata-rata</p>
+                    <h3 className="text-5xl font-bold font-display">{getLawyerDashboardData(user.id).stats.averageRating}</h3>
+                 </div>
+              </div>
+
               <div onClick={() => openAction('Diskusi Aktif', 'Daftar diskusi aktif akan membuka chat klien yang sedang berjalan dan pesan yang belum dijawab.')} className="p-10 bg-brand-gray-50 rounded-[48px] border border-brand-gray-100 flex flex-col justify-between group cursor-pointer hover:bg-white transition-all">
                  <div className="flex justify-between items-start">
                     <div className="p-3 bg-white rounded-2xl shadow-sm group-hover:bg-brand-black transition-colors">
@@ -421,8 +445,8 @@ export const LawyerDashboard = ({
                     <div className="w-2 h-2 bg-brand-black rounded-full animate-pulse"></div>
                  </div>
                  <div className="mt-8">
-                    <p className="text-[10px] font-bold text-brand-gray-400 uppercase tracking-widest mb-2">Diskusi Aktif</p>
-                    <h3 className="text-5xl font-bold font-display">{dashboardStats.activeCount || 12}</h3>
+                    <p className="text-[10px] font-bold text-brand-gray-400 uppercase tracking-widest mb-2">Kasus Aktif</p>
+                    <h3 className="text-5xl font-bold font-display">{dashboardStats.activeCount || 0}</h3>
                  </div>
               </div>
             </div>

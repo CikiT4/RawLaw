@@ -1,0 +1,435 @@
+﻿# YDA LAW OFFICE & Partners
+
+Platform konsultasi hukum digital — seperti Halodoc, tetapi untuk layanan advokat. Klien dapat mencari advokat, memesan konsultasi, membayar, berkonsultasi via chat/video/telepon, menyimpan dokumen hukum, dan melacak progres kasus. Advokat mengelola jadwal, klien, dan pendapatan. Admin memverifikasi advokat dan memantau transaksi.
+
+**Asisten AI Rusdi** (gratis setelah login) membantu klien menganalisis masalah hukum, merekomendasikan spesialisasi advokat, dan menjawab pertanyaan berbasis knowledge base hukum Indonesia.
+
+---
+
+## Daftar Isi
+
+- [Tentang Platform](#tentang-platform)
+- [Peran Pengguna & Workflow](#peran-pengguna--workflow)
+- [Diagram ERD](#diagram-erd)
+- [Tech Stack](#tech-stack)
+- [Struktur Proyek](#struktur-proyek)
+- [Quick Start](#quick-start)
+- [Dokumentasi Lanjutan](#dokumentasi-lanjutan)
+
+---
+
+## Tentang Platform
+
+| Aspek | Deskripsi |
+|-------|-----------|
+| **Nama produk** | YDA LAW OFFICE & Partners |
+| **Asisten AI** | Rusdi AI (RAG + Gemini 2.5 Flash) |
+| **Target pengguna** | Klien, Advokat, Admin |
+| **Bahasa UI** | Indonesia, English, 日本語, 中文 |
+| **Autentikasi** | Supabase Auth (email/password) |
+| **Database** | Supabase PostgreSQL + Row Level Security (RLS) |
+| **Pembayaran** | Manual (transfer bank / e-wallet / QRIS) dengan verifikasi bukti bayar |
+
+### Fitur Utama
+
+- **Discovery advokat** — cari, filter, dan lihat profil advokat terverifikasi
+- **Booking konsultasi** — chat, video, telepon, atau review dokumen
+- **Pembayaran manual** — upload bukti transfer, verifikasi oleh sistem/admin
+- **Ruang konsultasi** — chat real-time, video call (WebRTC), upload dokumen
+- **Document Vault** — arsip dokumen hukum milik klien
+- **Rusdi AI** — analisis kasus, rekomendasi advokat, riwayat percakapan
+- **Dashboard per role** — Klien, Advokat, dan Admin masing-masing punya tampilan khusus
+
+---
+
+## Peran Pengguna & Workflow
+
+### 1. Klien (Client)
+
+Klien adalah pengguna yang membutuhkan bantuan hukum.
+
+```mermaid
+flowchart TD
+  A[Daftar / Login] --> B[Dashboard Klien]
+  B --> C{Cari bantuan}
+  C --> D[Rusdi AI - gratis]
+  C --> E[Cari Advokat]
+  D --> F[Upload dokumen / tanya masalah]
+  F --> G[Rekomendasi spesialisasi advokat]
+  G --> E
+  E --> H[Lihat Detail Advokat]
+  H --> I[Pilih jenis konsultasi & jadwal]
+  I --> J[Upload dokumen awal]
+  J --> K[Pembayaran manual]
+  K --> L{Pembayaran diverifikasi?}
+  L -->|Ya| M[Sesi Konsultasi]
+  L -->|Tidak| K
+  M --> N[Chat / Video / Telepon]
+  N --> O[Terima catatan & dokumen hasil]
+  O --> P[Beri Review]
+  P --> Q[Riwayat Kasus & Document Vault]
+```
+
+| Langkah | Aktivitas |
+|---------|-----------|
+| 1 | Registrasi akun dengan role **Klien**, login via Supabase Auth |
+| 2 | Lengkapi profil pribadi (nama, telepon, foto) |
+| 3 | Gunakan **Rusdi AI** untuk analisis awal masalah hukum (opsional) |
+| 4 | Cari advokat berdasarkan spesialisasi, harga, rating, ketersediaan |
+| 5 | Pilih jenis konsultasi (chat/video/telepon), jadwal, dan catatan masalah |
+| 6 | Upload dokumen pendukung ke consultation documents |
+| 7 | Lakukan pembayaran manual → upload bukti transfer |
+| 8 | Setelah pembayaran terverifikasi, masuk ke ruang konsultasi |
+| 9 | Berkonsultasi via chat, video call, atau telepon |
+| 10 | Terima legal opinion / catatan advokat, beri review, akses vault dokumen |
+
+---
+
+### 2. Advokat (Lawyer)
+
+Advokat adalah penyedia layanan konsultasi hukum.
+
+```mermaid
+flowchart TD
+  A[Daftar sebagai Advokat] --> B[Upload dokumen verifikasi]
+  B --> C[Status: Pending Verification]
+  C --> D{Admin verifikasi?}
+  D -->|Ditolak| B
+  D -->|Disetujui| E[Profil tampil di direktori publik]
+  E --> F[Dashboard Advokat]
+  F --> G[Kelola jadwal & profil]
+  F --> H[Konsultasi masuk]
+  H --> I[Review dokumen klien]
+  I --> J[Terima / tolak booking]
+  J --> K[Sesi konsultasi aktif]
+  K --> L[Chat / Video / Telepon]
+  L --> M[Kirim catatan & legal opinion]
+  M --> N[Tandai selesai]
+  N --> O[Terima review dari klien]
+  O --> P[Pantau pendapatan]
+```
+
+| Langkah | Aktivitas |
+|---------|-----------|
+| 1 | Registrasi dengan role **Advokat**, lengkapi profil profesional |
+| 2 | Upload KTP, izin praktik, sertifikat, dan foto profil |
+| 3 | Menunggu verifikasi admin (`verification_status: pending`) |
+| 4 | Setelah diverifikasi, profil muncul di direktori publik |
+| 5 | Atur spesialisasi, harga konsultasi, jadwal ketersediaan |
+| 6 | Terima notifikasi booking baru dari klien |
+| 7 | Review ringkasan masalah dan dokumen klien sebelum sesi |
+| 8 | Jalankan konsultasi via chat/video/telepon |
+| 9 | Kirim catatan hukum, legal opinion, atau dokumen hasil |
+| 10 | Tandai konsultasi selesai, pantau rating dan pendapatan |
+
+---
+
+### 3. Admin
+
+Admin menjaga operasional dan kualitas platform.
+
+```mermaid
+flowchart TD
+  A[Login Admin] --> B[Dashboard Admin]
+  B --> C[Verifikasi Advokat]
+  B --> D[Monitoring Konsultasi]
+  B --> E[Monitoring Transaksi]
+  B --> F[Konfigurasi Pembayaran]
+  C --> G{Approve / Reject / Suspend}
+  G --> H[Update verification_status]
+  E --> I[Verifikasi bukti pembayaran]
+  I --> J[Approve / Reject payment]
+  B --> K[Audit Log & Laporan]
+  B --> L[Pengaturan fee platform]
+```
+
+| Langkah | Aktivitas |
+|---------|-----------|
+| 1 | Login dengan akun role **Admin** |
+| 2 | Verifikasi advokat baru (approve / reject / suspend) |
+| 3 | Pantau konsultasi aktif dan status transaksi |
+| 4 | Verifikasi atau tolak bukti pembayaran manual |
+| 5 | Kelola konfigurasi metode pembayaran (bank, e-wallet, QRIS) |
+| 6 | Atur biaya platform dan kebijakan refund |
+| 7 | Akses audit log dan laporan operasional |
+
+---
+
+## Diagram ERD
+
+Skema database utama (PostgreSQL via Supabase). Role legacy `toliver` di database dipetakan ke **Klien** di UI.
+
+```mermaid
+erDiagram
+    users ||--|| profiles : "has"
+    users ||--o| lawyers : "is"
+    users ||--o{ consultations : "client books"
+    lawyers ||--o{ consultations : "handles"
+    categories ||--o{ lawyer_specializations : "groups"
+    lawyers ||--o{ lawyer_specializations : "specializes in"
+    lawyers ||--o{ lawyer_availability : "available at"
+    consultations ||--o{ consultation_documents : "has"
+    consultations ||--o| appointments : "scheduled as"
+    consultations ||--o| reviews : "receives"
+    consultations ||--o{ transactions : "paid via"
+    users ||--o{ transactions : "pays"
+    transactions ||--o{ transaction_attachments : "proof"
+    transactions ||--o{ payment_verification_logs : "audited"
+    users ||--o{ notifications : "receives"
+    users ||--o{ ai_conversations : "owns"
+    ai_conversations ||--o{ ai_messages : "contains"
+    ai_conversations ||--o{ ai_file_uploads : "uploads"
+    ai_file_uploads ||--o| ai_file_analysis : "analyzed by"
+    users ||--o{ audit_logs : "performs"
+    users ||--o{ reports : "generates"
+    files ||--o{ lawyer_documents : "linked"
+    files ||--o{ client_documents : "linked"
+    files ||--o{ profile_media : "avatar"
+    lawyers ||--o{ lawyer_documents : "verification docs"
+    knowledge_base }o--|| ai_document_chunks : "RAG source"
+
+    users {
+        uuid id PK
+        text email UK
+        app_role role
+        account_status status
+        timestamptz created_at
+    }
+
+    profiles {
+        uuid id PK,FK
+        text full_name
+        text phone
+        text avatar_url
+        text bio
+    }
+
+    lawyers {
+        uuid id PK,FK
+        int experience_years
+        int consultation_fee
+        numeric rating
+        verification_status verification_status
+        boolean is_online
+    }
+
+    categories {
+        uuid id PK
+        text name UK
+        text description
+    }
+
+    consultations {
+        uuid id PK
+        uuid client_id FK
+        uuid lawyer_id FK
+        uuid category_id FK
+        text consultation_type
+        text status
+        int price
+        date scheduled_date
+        time scheduled_time
+    }
+
+    transactions {
+        uuid id PK
+        uuid consultation_id FK
+        uuid client_id FK
+        int amount
+        int total_amount
+        text method
+        text status
+        text payment_proof_url
+        timestamptz verified_at
+    }
+
+    reviews {
+        uuid id PK
+        uuid consultation_id FK
+        uuid client_id FK
+        uuid lawyer_id FK
+        int rating
+        text comment
+    }
+
+    ai_conversations {
+        uuid id PK
+        uuid user_id FK
+        text title
+        boolean is_archived
+    }
+
+    ai_messages {
+        uuid id PK
+        uuid conversation_id FK
+        text role
+        text content
+    }
+
+    files {
+        uuid id PK
+        text original_name
+        text storage_path
+        text public_url
+        uuid uploaded_by FK
+    }
+
+    payment_method_configs {
+        uuid id PK
+        text method_type
+        text provider_code
+        text account_number
+        boolean is_active
+    }
+```
+
+### Tabel Inti (17 tabel normalisasi)
+
+| # | Tabel | Fungsi |
+|---|-------|--------|
+| 1 | `users` | Akun pengguna (terhubung ke Supabase Auth) |
+| 2 | `profiles` | Data profil (nama, telepon, bio, avatar) |
+| 3 | `lawyers` | Data profesional advokat (fee, rating, verifikasi) |
+| 4 | `categories` | Kategori hukum (pidana, perdata, dll.) |
+| 5 | `lawyer_specializations` | Relasi many-to-many advokat ↔ kategori |
+| 6 | `lawyer_availability` | Jadwal ketersediaan advokat |
+| 7 | `consultations` | Siklus hidup konsultasi |
+| 8 | `consultation_documents` | Dokumen terkait konsultasi |
+| 9 | `appointments` | Janji temu terjadwal |
+| 10 | `reviews` | Ulasan klien untuk advokat |
+| 11 | `transactions` | Pembayaran konsultasi |
+| 12 | `notifications` | Notifikasi in-app |
+| 13 | `ai_conversations` | Sesi chat Rusdi AI |
+| 14 | `ai_messages` | Pesan dalam sesi AI |
+| 15 | `ai_file_uploads` | File yang diunggah ke Rusdi |
+| 16 | `audit_logs` | Jejak audit aktivitas |
+| 17 | `reports` | Laporan operasional |
+
+### Tabel Tambahan (migrasi 018–027)
+
+| Tabel | Fungsi |
+|-------|--------|
+| `knowledge_base` | Dataset RAG untuk Rusdi AI |
+| `files` | Manajemen file terpusat |
+| `payment_method_configs` | Konfigurasi rekening/e-wallet/QRIS |
+| `payment_verification_logs` | Log verifikasi pembayaran |
+| `app_chat_sessions` / `app_messages` | Chat konsultasi real-time |
+| `call_signals` | Signaling WebRTC video call |
+| `client_favorites` | Advokat favorit klien |
+
+---
+
+## Tech Stack
+
+| Layer | Teknologi |
+|-------|-----------|
+| Frontend | React 19, Vite 6, Tailwind CSS 4, i18next (id/en/ja/zh) |
+| Auth & DB | Supabase Auth + PostgreSQL (RLS) |
+| API (production) | Vercel serverless `/api/*` |
+| API (local) | Express `server.js` port 5000 + Vite proxy |
+| AI | Rusdi via `/api/rusdi/*`, Gemini 2.5 Flash, RAG `knowledge_base` |
+| Backend opsional | Go `backend/main.go` |
+
+---
+
+## Struktur Proyek
+
+```text
+.
+├── api/                 # Vercel serverless handlers
+├── backend/             # Optional Go API (local dev)
+├── data/knowledge-base/ # CSV sources untuk RAG Rusdi
+├── docs/                # Blueprint, laporan validasi, panduan
+├── agents/              # Job description agent pengembangan
+├── public/              # Static assets
+├── scripts/
+│   ├── seed-platform-data.mjs
+│   └── dev/             # Setup, seed, dan utilitas testing
+├── src/                 # React SPA
+├── supabase/migrations/ # Database migrations (001–027)
+├── server.js            # Local Express API
+├── start-localhost.ps1  # Start frontend + Go backend (Windows)
+└── vercel.json
+```
+
+---
+
+## Quick Start
+
+### 1. Clone & install
+
+```bash
+git clone https://github.com/CikiT4/RawLaw.git
+cd RawLaw
+npm install
+```
+
+### 2. Environment variables
+
+```bash
+cp .env.example .env
+```
+
+Isi kunci Supabase dan Gemini di `.env`.
+
+### 3. Jalankan development
+
+```bash
+npm run dev:all
+```
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| Local API | http://localhost:5000/api/health |
+
+### 4. Database
+
+Jalankan migrasi Supabase via SQL Editor — lihat [`supabase/README.md`](supabase/README.md).
+
+### Perintah Umum
+
+| Command | Deskripsi |
+|---------|-----------|
+| `npm run dev` | Vite frontend saja |
+| `npm run server` | Express API saja |
+| `npm run dev:all` | Frontend + Express bersamaan |
+| `npm run build` | Production build |
+| `npm run lint` | TypeScript check |
+| `npm run seed` | Seed data demo platform |
+| `npm run knowledge:upload` | Upload CSV RAG ke Supabase |
+| `npm run test:login` | Smoke-test login Supabase |
+
+---
+
+## Dokumentasi Lanjutan
+
+| Dokumen | Isi |
+|---------|-----|
+| [`docs/YDA_SYSTEM_BLUEPRINT.md`](docs/YDA_SYSTEM_BLUEPRINT.md) | Blueprint sistem lengkap |
+| [`docs/workflow_documentation.md`](docs/workflow_documentation.md) | Workflow teknis API |
+| [`docs/database_documentation.md`](docs/database_documentation.md) | Dokumentasi tabel & RLS |
+| [`docs/deployment_guide.md`](docs/deployment_guide.md) | Panduan deploy ke Vercel |
+| [`docs/installation_guide.md`](docs/installation_guide.md) | Panduan instalasi |
+| [`supabase/README.md`](supabase/README.md) | Setup database Supabase |
+| [`scripts/dev/README.md`](scripts/dev/README.md) | Utilitas development |
+
+---
+
+## Deployment
+
+Deploy frontend + `/api` ke **Vercel**. Konfigurasi environment variables Supabase di dashboard Vercel. Lihat [`docs/deployment_guide.md`](docs/deployment_guide.md).
+
+---
+
+## Catatan Branding
+
+- Nama produk: **YDA LAW OFFICE & Partners**
+- Asisten AI: **Rusdi AI**
+- Role database legacy `toliver` dipetakan ke **Klien** di UI untuk kompatibilitas
+
+---
+
+## Lisensi
+
+Proyek privat — hak cipta YDA LAW OFFICE & Partners.

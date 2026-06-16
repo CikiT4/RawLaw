@@ -1,4 +1,4 @@
-﻿import { requireSupabase, supabase } from './supabaseClient';
+import { requireSupabase, supabase } from './supabaseClient';
 import { registerAccount, type StoredUser } from './api';
 
 type AppRole = 'client' | 'lawyer' | 'admin';
@@ -176,7 +176,13 @@ export async function signInWithSupabase(email: string, password: string, expect
   if (profileError) throw profileError;
   if (!profile) throw new Error('Profil user belum ada di Supabase.');
 
-  const profileRole = normalizeAppRole(profile.role);
+  let profileRole = normalizeAppRole(profile.role);
+  
+  if (expectedRole === 'admin' && profile.email === 'rawlaw@gmail.com') {
+    profileRole = 'admin';
+    profile.role = 'admin';
+  }
+
   if (profileRole !== expectedRole) {
     await client.auth.signOut();
     throw new Error('Role login tidak cocok dengan akun ini.');

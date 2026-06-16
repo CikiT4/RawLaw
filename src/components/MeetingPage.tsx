@@ -10,6 +10,39 @@ import { fetchCallSignals, getStoredUser, sendCallSignal, type CallSignalRow } f
 
 type CallState = 'idle' | 'starting' | 'waiting' | 'connected' | 'ended' | 'error' | 'unavailable';
 
+function buildIceServers(): RTCIceServer[] {
+  const servers: RTCIceServer[] = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:global.stun.twilio.com:3478' }
+  ];
+  const turnUrl = import.meta.env.VITE_TURN_URL as string | undefined;
+  if (turnUrl) {
+    servers.push({
+      urls: turnUrl,
+      username: import.meta.env.VITE_TURN_USERNAME as string | undefined,
+      credential: import.meta.env.VITE_TURN_CREDENTIAL as string | undefined
+    });
+  }
+  return servers;
+}
+
+function mediaErrorMessage(error: unknown, isVoiceOnly: boolean) {
+  if (!(error instanceof DOMException)) {
+    return 'Kamera atau mikrofon gagal dibuka.';
+  }
+  if (error.name === 'NotAllowedError' || error.name === 'SecurityError') {
+    return isVoiceOnly
+      ? 'Izin mikrofon ditolak. Aktifkan izin mikrofon browser lalu masuk ulang.'
+      : 'Izin kamera atau mikrofon ditolak. Aktifkan izin browser lalu masuk ulang.';
+  }
+  if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+    return isVoiceOnly
+      ? 'Mikrofon tidak ditemukan di perangkat ini.'
+      : 'Kamera atau mikrofon tidak ditemukan di perangkat ini.';
+  }
+  return error.message || 'Kamera atau mikrofon gagal dibuka.';
+}
+
 export const MeetingPage = ({
   lawyer,
   consultationId,
@@ -56,6 +89,7 @@ export const MeetingPage = ({
   const hasCreatedOfferRef = useRef(false);
   const pollRef = useRef<number | null>(null);
   const signalSinceRef = useRef(new Date(Date.now() - 120000).toISOString());
+  const leaveSentRef = useRef(false);
   const peerIdRef = useRef(
     typeof crypto !== 'undefined' && 'randomUUID' in crypto
       ? crypto.randomUUID()
@@ -190,12 +224,7 @@ export const MeetingPage = ({
       remoteStreamRef.current = remoteStream;
       if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remoteStream;
 
-      const peer = new RTCPeerConnection({
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:global.stun.twilio.com:3478' }
-        ]
-      });
+      const peer = new RTCPeerConnection({ iceServers: buildIceServers() });
       peerRef.current = peer;
 
       localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
@@ -216,7 +245,9 @@ export const MeetingPage = ({
           setCallMessage('Terhubung realtime.');
         } else if (peer.connectionState === 'failed') {
           setCallState('error');
-          setCallMessage('Koneksi panggilan gagal. Coba tutup lalu masuk lagi dari chat.');
+          setCallMessage(import.meta.env.VITE_TURN_URL
+            ? 'Koneksi panggilan gagal. Coba tutup lalu masuk lagi dari chat.'
+            : 'Koneksi panggilan gagal. TURN belum dikonfigurasi untuk jaringan yang membatasi WebRTC.');
         } else if (peer.connectionState === 'disconnected') {
           setCallMessage('Koneksi lawan bicara terputus sementara...');
         }
@@ -230,6 +261,8 @@ export const MeetingPage = ({
         for (const signal of signals) {
           await processSignal(signal);
         }
+        const latest = signals[signals.length - 1]?.created_at;
+        if (latest) signalSinceRef.current = latest;
       };
 
       await pollSignals();
@@ -245,13 +278,12 @@ export const MeetingPage = ({
 
     startWebRtc().catch(error => {
       setCallState('error');
-      setCallMessage(error instanceof Error ? error.message : 'Kamera atau mikrofon gagal dibuka.');
+      setCallMessage(error instanceof Error && !(error instanceof DOMException) ? error.message : mediaErrorMessage(error, isVoiceOnly));
     });
 
     return () => {
       active = false;
       if (pollRef.current) window.clearInterval(pollRef.current);
-      emitSignal('leave', { reason: 'ended' });
       peerRef.current?.close();
       peerRef.current = null;
       localStreamRef.current?.getTracks().forEach(track => track.stop());
@@ -260,6 +292,24 @@ export const MeetingPage = ({
       remoteStreamRef.current = null;
     };
   }, [consultationId, currentUserRole, isVoiceOnly]);
+
+  const endCallExplicitly = async () => {
+    const user = getStoredUser();
+    if (consultationId && user?.id && !leaveSentRef.current) {
+      leaveSentRef.current = true;
+      await sendCallSignal({
+        consultationId,
+        senderId: user.id,
+        senderRole: currentUserRole,
+        signalType: 'leave',
+        payload: {
+          reason: 'ended',
+          peerId: peerIdRef.current
+        }
+      }).catch(() => null);
+    }
+    onEndCall();
+  };
 
   const statusColor = callState === 'connected' ? 'bg-green-500' : callState === 'error' ? 'bg-red-500' : 'bg-amber-400';
 
@@ -436,7 +486,7 @@ export const MeetingPage = ({
 
           <div className="pl-8 border-l border-white/5">
             <button
-              onClick={onEndCall}
+              onClick={endCallExplicitly}
               className="bg-red-500 hover:bg-red-600 px-8 py-4 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all shadow-xl shadow-red-500/20 flex items-center space-x-2"
             >
               <PhoneOff className="w-4 h-4" />

@@ -73,6 +73,9 @@ export const ChatPage = ({
           setIncomingCall(null);
         }
       }
+
+      const latest = signals[signals.length - 1]?.created_at;
+      if (latest) callSignalSinceRef.current = latest;
     };
 
     pollIncomingCall();

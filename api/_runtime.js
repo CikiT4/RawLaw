@@ -32,6 +32,12 @@ export function supabaseServiceKey() {
   return process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 }
 
+export function bearerToken(req) {
+  const header = req.headers.authorization || req.headers.Authorization || '';
+  if (!header.toLowerCase().startsWith('bearer ')) return '';
+  return header.slice(7).trim();
+}
+
 export async function supabaseRest(method, path, payload) {
   const baseUrl = supabaseUrl();
   const serviceKey = supabaseServiceKey();
@@ -66,6 +72,31 @@ export async function supabaseRest(method, path, payload) {
 
   if (!text) return null;
   return JSON.parse(text);
+}
+
+export async function requireAuthenticatedProfile(req, options = {}) {
+  const token = bearerToken(req);
+  const baseUrl = supabaseUrl();
+  const serviceKey = supabaseServiceKey();
+  if (!token || !baseUrl || !serviceKey) throw new Error('Sesi tidak valid.');
+
+  const { createClient } = await import('@supabase/supabase-js');
+  const admin = createClient(baseUrl, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  });
+
+  const { data, error } = await admin.auth.getUser(token);
+  if (error || !data.user?.id) throw new Error('Sesi tidak valid.');
+
+  const select = options.select || 'id,full_name,email,role,status';
+  const profiles = await supabaseRest(
+    'GET',
+    `profiles?id=eq.${encodeURIComponent(data.user.id)}&select=${select}`
+  );
+  const profile = profiles?.[0];
+  if (!profile || profile.status !== 'active') throw new Error('Akun tidak aktif.');
+
+  return { userId: data.user.id, profile };
 }
 
 export function normalizePaymentMethod(method = '') {

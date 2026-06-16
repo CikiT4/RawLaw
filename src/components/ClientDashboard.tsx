@@ -9,7 +9,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { ActionModal } from './ActionModal';
-import { fetchClientConsultations, getStoredUser, type ConsultationRow, type StoredUser } from '../api';
+import { fetchClientConsultations, fetchClientPayments, fetchDocuments, getStoredUser, type ConsultationRow, type StoredUser, type ClientPaymentRow, type DocumentRow } from '../api';
 import { Message } from '../types';
 
 const getFirstName = (name: string) => name.trim().split(/\s+/)[0] || 'Client';
@@ -295,6 +295,8 @@ export const ClientDashboard = ({
   const [notificationItems, setNotificationItems] = useState<Array<{ id: string; title: string; desc: string; time: string; icon: typeof CheckCircle2; color: string }>>([]);
   const [isLoadingConsultations, setIsLoadingConsultations] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [payments, setPayments] = useState<ClientPaymentRow[]>([]);
+  const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const user = getStoredUser();
 
   useEffect(() => {
@@ -302,6 +304,8 @@ export const ClientDashboard = ({
       setConsultations([]);
       setFavoriteLawyers([]);
       setNotificationItems([]);
+      setPayments([]);
+      setDocuments([]);
       setIsLoadingConsultations(false);
       return;
     }
@@ -346,6 +350,14 @@ export const ClientDashboard = ({
       .finally(() => {
         if (mounted) setIsLoadingConsultations(false);
       });
+
+    fetchClientPayments(user.id)
+      .then(rows => { if (mounted) setPayments(rows); })
+      .catch(() => { if (mounted) setPayments([]); });
+
+    fetchDocuments(user.id)
+      .then(rows => { if (mounted) setDocuments(rows); })
+      .catch(() => { if (mounted) setDocuments([]); });
 
     return () => {
       mounted = false;
@@ -708,6 +720,91 @@ export const ClientDashboard = ({
                   })}
                 </tbody>
               </table>
+            </div>
+          </section>
+        </div>
+
+        {/* Payment History, Documents & AI Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 pt-8">
+          <section className="lg:col-span-8 space-y-8">
+            <div className="flex items-center justify-between px-2">
+              <h2 className="text-2xl font-bold font-display">Riwayat Pembayaran</h2>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">{payments.length} transaksi</span>
+            </div>
+            <div className="bg-white rounded-[48px] border border-brand-gray-100 overflow-hidden shadow-sm">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-brand-gray-50">
+                    <th className="px-8 py-6 text-left text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">Invoice</th>
+                    <th className="px-8 py-6 text-left text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">Metode</th>
+                    <th className="px-8 py-6 text-left text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">Jumlah</th>
+                    <th className="px-8 py-6 text-right text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-brand-gray-50">
+                  {payments.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-8 py-12 text-center">
+                        <p className="text-sm font-bold text-brand-black">Belum ada riwayat pembayaran</p>
+                        <p className="mt-2 text-xs font-medium text-brand-gray-500">Pembayaran akan muncul setelah booking konsultasi.</p>
+                      </td>
+                    </tr>
+                  )}
+                  {payments.map(item => (
+                    <tr key={item.id} className="group hover:bg-brand-gray-50 transition-colors">
+                      <td className="px-8 py-6">
+                        <p className="text-sm font-bold">{item.invoice_number || item.id.slice(0, 8)}</p>
+                        <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">{new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(item.created_at))}</p>
+                      </td>
+                      <td className="px-8 py-6">
+                        <p className="text-sm font-bold capitalize">{item.method.replace('_', ' ')}</p>
+                      </td>
+                      <td className="px-8 py-6">
+                        <p className="text-sm font-bold">Rp {Number(item.total_amount || 0).toLocaleString('id-ID')}</p>
+                      </td>
+                      <td className="px-8 py-6 text-right">
+                        <span className={`inline-flex items-center rounded-md border px-2 py-1 text-[10px] font-bold uppercase tracking-widest ${item.status === 'paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : item.status === 'failed' || item.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
+                          {item.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="lg:col-span-4 space-y-8">
+            <div className="bg-brand-gray-50 border border-brand-gray-100 rounded-[48px] p-8 space-y-6">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-brand-black">Dokumen Tersimpan</h3>
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white rounded-2xl shadow-sm">
+                  <FileText className="w-6 h-6 text-brand-black" />
+                </div>
+                <div>
+                  <p className="text-3xl font-bold font-display">{documents.length}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">file diunggah</p>
+                </div>
+              </div>
+              <button onClick={onViewDocuments} className="w-full rounded-2xl border border-brand-gray-200 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-white transition-colors">
+                Lihat Semua Dokumen
+              </button>
+            </div>
+
+            <div className="bg-brand-gray-50 border border-brand-gray-100 rounded-[48px] p-8 space-y-6">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-brand-black">Percakapan AI</h3>
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-amber-50 rounded-2xl">
+                  <Bot className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-3xl font-bold font-display">Rusdi AI</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">asisten hukum gratis</p>
+                </div>
+              </div>
+              <button onClick={onOpenRusdi} className="w-full rounded-2xl bg-amber-500 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-950 hover:bg-amber-600 transition-colors">
+                Buka Rusdi AI
+              </button>
             </div>
           </section>
         </div>

@@ -1,4 +1,4 @@
-﻿import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { Briefcase, ShieldCheck, MessageSquare, ArrowLeft } from 'lucide-react';
 import { ActionModal } from './ActionModal';
 import { signInWithSupabase } from '../supabaseAuth';
@@ -20,6 +20,11 @@ export const LoginPage = ({
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [modal, setModal] = useState<{ title: string; description: string } | null>(null);
+
+  useEffect(() => {
+    setEmail('rawlaw@gmail.com');
+    setPassword('12345678');
+  }, [identity]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

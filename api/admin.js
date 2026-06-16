@@ -125,6 +125,24 @@ export default async function handler(req, res) {
           is_active: body.isActive,
           updated_at: new Date().toISOString()
         });
+      } else if (body.action === 'delete-user') {
+        await supabaseRest('DELETE', `profiles?id=eq.${encodeURIComponent(body.userId)}`);
+      } else if (body.action === 'delete-lawyer') {
+        await supabaseRest('DELETE', `lawyer_directory?id=eq.${encodeURIComponent(body.lawyerUserId)}`);
+        await supabaseRest('DELETE', `profiles?id=eq.${encodeURIComponent(body.lawyerUserId)}`);
+      } else if (body.action === 'create-category') {
+        await supabaseRest('POST', 'legal_categories', { name: body.name, description: body.description || null });
+      } else if (body.action === 'update-category') {
+        await supabaseRest('PATCH', `legal_categories?id=eq.${encodeURIComponent(body.categoryId)}`, { name: body.name, description: body.description || null });
+      } else if (body.action === 'delete-category') {
+        await supabaseRest('DELETE', `legal_categories?id=eq.${encodeURIComponent(body.categoryId)}`);
+      } else if (body.action === 'delete-consultation') {
+        await supabaseRest('DELETE', `app_payments?consultation_id=eq.${encodeURIComponent(body.consultationId)}`);
+        await supabaseRest('DELETE', `app_consultations?id=eq.${encodeURIComponent(body.consultationId)}`);
+      } else if (body.action === 'delete-review') {
+        await supabaseRest('DELETE', `reviews?id=eq.${encodeURIComponent(body.reviewId)}`);
+      } else if (body.action === 'archive-transaction') {
+        await supabaseRest('PATCH', `app_payments?id=eq.${encodeURIComponent(body.transactionId)}`, { status: 'expired', updated_at: new Date().toISOString() });
       } else {
         sendJson(res, 400, { error: 'Aksi admin tidak valid.' });
         return;

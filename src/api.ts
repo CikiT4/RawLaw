@@ -1372,3 +1372,59 @@ export function registerAccount(payload: {
     body: JSON.stringify(payload)
   });
 }
+
+export async function deleteUserAccount(userId: string) {
+  await request('/admin', {
+    method: 'PATCH',
+    body: JSON.stringify({ action: 'delete-user', userId })
+  });
+}
+
+export async function deleteLawyerAccount(lawyerUserId: string) {
+  await request('/admin', {
+    method: 'PATCH',
+    body: JSON.stringify({ action: 'delete-lawyer', lawyerUserId })
+  });
+}
+
+export async function createCategory(payload: { name: string; description: string }) {
+  await request('/admin', {
+    method: 'PATCH',
+    body: JSON.stringify({ action: 'create-category', ...payload })
+  });
+}
+
+export async function updateCategory(categoryId: string, payload: { name: string; description: string }) {
+  await request('/admin', {
+    method: 'PATCH',
+    body: JSON.stringify({ action: 'update-category', categoryId, ...payload })
+  });
+}
+
+export async function deleteCategory(categoryId: string) {
+  await request('/admin', {
+    method: 'PATCH',
+    body: JSON.stringify({ action: 'delete-category', categoryId })
+  });
+}
+
+export async function deleteConsultation(consultationId: string) {
+  await request('/admin', {
+    method: 'PATCH',
+    body: JSON.stringify({ action: 'delete-consultation', consultationId })
+  });
+}
+
+export async function deleteReview(reviewId: string) {
+  await request('/admin', {
+    method: 'PATCH',
+    body: JSON.stringify({ action: 'delete-review', reviewId })
+  });
+}
+
+export async function archiveTransaction(transactionId: string) {
+  await request('/admin', {
+    method: 'PATCH',
+    body: JSON.stringify({ action: 'archive-transaction', transactionId })
+  });
+}
