@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Activity,
   AlertCircle,
@@ -207,13 +207,16 @@ export const AdminDashboard = ({ onLogout }: { onLogout: () => void }) => {
     return text.includes(query.toLowerCase());
   });
 
-  const filteredTransactions = transactions.filter(item => {
+  const displayPendingLawyers = pendingLawyers.length > 0 ? pendingLawyers : getAdminDashboardData().pendingLawyers;
+  const sourceTransactions = transactions.length > 0 ? transactions : getAdminDashboardData().transactions;
+  const filteredTransactions = sourceTransactions.filter(item => {
     const text = `${item.external_reference || item.id} ${item.profiles?.full_name || ''} ${item.app_consultations?.lawyer_directory?.name || ''} ${item.status}`.toLowerCase();
     return text.includes(query.toLowerCase());
   });
 
-  const activeConsultations = consultations.filter(item => !isHistoryStatus(item.status));
-  const historyConsultations = consultations.filter(item => isHistoryStatus(item.status));
+  const sourceConsultations = consultations.length > 0 ? consultations : getAdminDashboardData().consultations;
+  const activeConsultations = sourceConsultations.filter(item => !isHistoryStatus(item.status));
+  const historyConsultations = sourceConsultations.filter(item => isHistoryStatus(item.status));
   const filteredConsultations = activeConsultations.filter(item => caseFilter === 'all' || item.status === caseFilter);
 
   const handleVerifyLawyer = async (id: string, name: string) => {
@@ -542,40 +545,100 @@ export const AdminDashboard = ({ onLogout }: { onLogout: () => void }) => {
         )}
 
         {activeTab === 'lawyers' && (
-          <section className="rounded-lg border border-black/10 bg-white">
-            <div className="flex items-center justify-between border-b border-brand-gray-100 p-6">
-              <div>
-                <h2 className="font-display text-2xl font-bold">Lawyer Verification</h2>
-                <p className="mt-1 text-xs font-medium text-brand-gray-500">Approve advokat valid, reject yang dokumennya belum layak.</p>
-              </div>
-              <Pill value={`${pendingLawyers.length} records`} />
-            </div>
-            <div className="divide-y divide-brand-gray-100">
-              {pendingLawyers.map(item => (
-                <div key={item.user_id} className="grid grid-cols-1 gap-4 p-6 lg:grid-cols-[1.3fr_1fr_auto] lg:items-center">
-                  <div>
-                    <p className="text-sm font-bold">{item.profiles?.full_name || 'Advokat Baru'}</p>
-                    <p className="mt-1 text-xs text-brand-gray-500">{item.profiles?.email || 'Email belum tersedia'}</p>
+          <section className="space-y-6">
+            <div className="grid grid-cols-1 gap-4 rounded-lg border border-black/10 bg-white p-4 md:grid-cols-3">
+              {[
+                { label: 'Total Lawyers', value: stats[1].value, hint: stats[1].hint, icon: ShieldCheck },
+                { label: 'Active Online', value: String(getPlatformStats().activeLawyers), hint: 'lawyers online now', icon: Activity },
+                { label: 'Pending Verification', value: String(displayPendingLawyers.length), hint: 'need approval', icon: AlertCircle },
+              ].map(stat => (
+                <div key={stat.label} className="rounded-lg border border-brand-gray-100 bg-brand-gray-50 p-5">
+                  <div className="mb-4 flex items-center justify-between">
+                    <stat.icon className="h-5 w-5 text-brand-gray-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">{stat.hint}</span>
                   </div>
-                  <div>
-                    <p className="text-sm font-bold">{item.specialty || 'Belum diisi'}</p>
-                    <p className="mt-1 text-xs text-brand-gray-500">{currency.format(item.consultation_price || 0)} • {item.experience_years || 0} tahun</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Pill value={item.verification_status} />
-                    <button onClick={() => handleVerifyLawyer(item.user_id, item.profiles?.full_name || 'Advokat')} className="rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-emerald-700 hover:bg-emerald-600 hover:text-white" title="Verifikasi">
-                      <UserCheck className="h-4 w-4" />
-                    </button>
-                    <button onClick={() => handleRejectLawyer(item.user_id, item.profiles?.full_name || 'Advokat')} className="rounded-lg border border-red-100 bg-red-50 p-3 text-red-700 hover:bg-red-600 hover:text-white" title="Tolak">
-                      <Ban className="h-4 w-4" />
-                    </button>
-                    <button onClick={async () => { try { await deleteLawyerAccount(item.user_id); await refreshAdminData(); openAction('Advokat Dihapus', `Akun advokat ${item.profiles?.full_name || ''} telah dihapus.`); } catch (error) { openAction('Gagal Hapus', error instanceof Error ? error.message : 'Gagal menghapus advokat.'); } }} className="rounded-lg border border-red-100 bg-red-50 p-3 text-red-700" title="Hapus advokat">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-brand-gray-500">{stat.label}</p>
+                  <p className="mt-1 font-display text-3xl font-bold">{stat.value}</p>
                 </div>
               ))}
-              {pendingLawyers.length === 0 && <div className="p-6"><EmptyState title="Tidak ada advokat pending" detail="Bagus. Artinya queue verifikasi sedang bersih." /></div>}
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+              <div className="rounded-lg border border-black/10 bg-white p-6">
+                <div className="mb-5 flex items-center justify-between">
+                  <h2 className="font-display text-xl font-bold">Category Distribution</h2>
+                  <Gavel className="h-5 w-5 text-brand-gray-400" />
+                </div>
+                <div className="space-y-3">
+                  {getAdminDashboardData().analytics.categoryPopularity.map(item => (
+                    <div key={item.category} className="flex items-center justify-between rounded-lg border border-brand-gray-100 p-3">
+                      <span className="text-sm font-bold">{item.category}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">{item.count} konsultasi</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-black/10 bg-white p-6">
+                <div className="mb-5 flex items-center justify-between">
+                  <h2 className="font-display text-xl font-bold">Lawyer Performance</h2>
+                  <ShieldCheck className="h-5 w-5 text-brand-gray-400" />
+                </div>
+                <div className="space-y-3">
+                  {getAdminDashboardData().analytics.topLawyers.slice(0, 5).map((item, index) => (
+                    <div key={item.name} className="flex items-center justify-between rounded-lg border border-brand-gray-100 p-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg font-bold text-brand-gray-400">#{index + 1}</span>
+                        <div>
+                          <p className="text-sm font-bold">{item.name}</p>
+                          <p className="text-[10px] font-medium text-brand-gray-500">{item.consultations} consultations</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold">★ {item.rating}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">{currency.format(item.revenue)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-black/10 bg-white">
+              <div className="flex items-center justify-between border-b border-brand-gray-100 p-6">
+                <div>
+                  <h2 className="font-display text-2xl font-bold">Lawyer Verification</h2>
+                  <p className="mt-1 text-xs font-medium text-brand-gray-500">Approve advokat valid, reject yang dokumennya belum layak.</p>
+                </div>
+                <Pill value={`${displayPendingLawyers.length} records`} />
+              </div>
+              <div className="divide-y divide-brand-gray-100">
+                {displayPendingLawyers.map(item => (
+                  <div key={item.user_id} className="grid grid-cols-1 gap-4 p-6 lg:grid-cols-[1.3fr_1fr_auto] lg:items-center">
+                    <div>
+                      <p className="text-sm font-bold">{item.profiles?.full_name || 'Advokat Baru'}</p>
+                      <p className="mt-1 text-xs text-brand-gray-500">{item.profiles?.email || 'Email belum tersedia'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold">{item.specialty || 'Belum diisi'}</p>
+                      <p className="mt-1 text-xs text-brand-gray-500">{currency.format(item.consultation_price || 0)} • {item.experience_years || 0} tahun</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Pill value={item.verification_status} />
+                      <button onClick={() => handleVerifyLawyer(item.user_id, item.profiles?.full_name || 'Advokat')} className="rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-emerald-700 hover:bg-emerald-600 hover:text-white" title="Verifikasi">
+                        <UserCheck className="h-4 w-4" />
+                      </button>
+                      <button onClick={() => handleRejectLawyer(item.user_id, item.profiles?.full_name || 'Advokat')} className="rounded-lg border border-red-100 bg-red-50 p-3 text-red-700 hover:bg-red-600 hover:text-white" title="Tolak">
+                        <Ban className="h-4 w-4" />
+                      </button>
+                      <button onClick={async () => { try { await deleteLawyerAccount(item.user_id); await refreshAdminData(); openAction('Advokat Dihapus', `Akun advokat ${item.profiles?.full_name || ''} telah dihapus.`); } catch (error) { openAction('Gagal Hapus', error instanceof Error ? error.message : 'Gagal menghapus advokat.'); } }} className="rounded-lg border border-red-100 bg-red-50 p-3 text-red-700" title="Hapus advokat">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {displayPendingLawyers.length === 0 && <div className="p-6"><EmptyState title="Tidak ada advokat pending" detail="Bagus. Artinya queue verifikasi sedang bersih." /></div>}
+              </div>
             </div>
           </section>
         )}

@@ -20,7 +20,9 @@ async function requireAuth(req) {
   const url = supabaseUrl();
   const serviceKey = supabaseServiceKey();
   if (!token || !url || !serviceKey) {
-    throw new Error('Sesi tidak valid.');
+    const e = new Error('Sesi tidak valid.');
+    e.code = 'UNAUTHORIZED';
+    throw e;
   }
 
   const client = createClient(url, serviceKey, {
@@ -28,7 +30,9 @@ async function requireAuth(req) {
   });
   const { data, error } = await client.auth.getUser(token);
   if (error || !data.user?.id) {
-    throw new Error('Sesi tidak valid.');
+    const e = new Error('Sesi tidak valid.');
+    e.code = 'UNAUTHORIZED';
+    throw e;
   }
   return data.user.id;
 }
@@ -122,42 +126,46 @@ async function loadConversationHistory(conversationId) {
 
 async function persistTurn({ conversationId, userId, userMessage, assistantMessage, title }) {
   const conversationReady = await ensureConversation(conversationId, userId, title || userMessage.slice(0, 60));
-  if (!conversationReady) return false;
 
-  try {
-    await supabaseRest('POST', 'ai_messages', {
-      conversation_id: conversationId,
-      role: 'user',
-      content: userMessage
-    });
-    await supabaseRest('POST', 'ai_messages', {
-      conversation_id: conversationId,
-      role: 'assistant',
-      content: assistantMessage
-    });
-  } catch {
-    const legacySaved = await Promise.all([
-      supabaseRest('POST', 'ai_chat_history', {
-        session_id: conversationId,
+  if (conversationReady) {
+    try {
+      await supabaseRest('POST', 'ai_messages', {
+        conversation_id: conversationId,
         user_id: userId,
         role: 'user',
-        message: userMessage
-      }).catch(() => null),
-      supabaseRest('POST', 'ai_chat_history', {
-        session_id: conversationId,
+        content: userMessage
+      });
+      await supabaseRest('POST', 'ai_messages', {
+        conversation_id: conversationId,
         user_id: userId,
         role: 'assistant',
-        message: assistantMessage
-      }).catch(() => null)
-    ]);
-    if (!legacySaved.some(Boolean)) return false;
+        content: assistantMessage
+      });
+      await supabaseRest('PATCH', `ai_conversations?id=eq.${encodeURIComponent(conversationId)}`, {
+        title: (title || userMessage.slice(0, 60)).slice(0, 120),
+        updated_at: new Date().toISOString()
+      }).catch(() => null);
+      return true;
+    } catch {
+      // Fallback below
+    }
   }
 
-  await supabaseRest('PATCH', `ai_conversations?id=eq.${encodeURIComponent(conversationId)}`, {
-    title: (title || userMessage.slice(0, 60)).slice(0, 120),
-    updated_at: new Date().toISOString()
-  }).catch(() => null);
-  return true;
+  const legacySaved = await Promise.all([
+    supabaseRest('POST', 'ai_chat_history', {
+      session_id: conversationId,
+      user_id: userId,
+      role: 'user',
+      message: userMessage
+    }).catch(() => null),
+    supabaseRest('POST', 'ai_chat_history', {
+      session_id: conversationId,
+      user_id: userId,
+      role: 'assistant',
+      message: assistantMessage
+    }).catch(() => null)
+  ]);
+  return legacySaved.some(Boolean);
 }
 
 export default async function handler(req, res) {
@@ -272,17 +280,34 @@ export default async function handler(req, res) {
       persisted
     });
   } catch (error) {
-    console.error('[rusdi/chat]', error);
+    const code = error?.code || 'UNKNOWN';
+    const upstreamStatus = error?.upstreamStatus || undefined;
+    const upstreamBody = error?.upstreamBody || undefined;
+    const totalAttempts = error?.totalAttempts || undefined;
+    console.error('[rusdi/chat]', {
+      code,
+      upstreamStatus,
+      upstreamBody,
+      totalAttempts,
+      message: error instanceof Error ? error.message : String(error)
+    });
     const message = error instanceof Error ? error.message : 'Gagal memproses request AI';
-    const status = error?.code === 'GEMINI_QUOTA'
+    const status = code === 'GEMINI_QUOTA'
       ? 429
-      : error?.code === 'GEMINI_UNAVAILABLE'
+      : code === 'GEMINI_UNAVAILABLE' || code === 'GEMINI_EMPTY'
         ? 503
-        : 502;
+        : code === 'UNAUTHORIZED'
+          ? 401
+          : code === 'GEMINI_NO_KEY'
+            ? 500
+            : 502;
     sendJson(res, status, {
       error: message,
       retryable: status === 503,
-      code: error?.code || undefined
+      code,
+      upstreamStatus,
+      upstreamBody,
+      totalAttempts
     });
   }
 }

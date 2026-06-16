@@ -1,4 +1,5 @@
 ﻿import { createClient } from '@supabase/supabase-js';
+import { generateGeminiContent } from './geminiClient.js';
 import { handleOptions, sendJson, supabaseRest, supabaseServiceKey, supabaseUrl } from './_runtime.js';
 
 function bearerToken(req) {
@@ -124,35 +125,15 @@ Batasan Penting:
     });
 
     const apiKey = process.env.GEMINI_API_KEY || '';
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY belum dikonfigurasi di server');
-    }
-
-    // 5. Call Gemini API
-    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
+    const { text: aiResponse } = await generateGeminiContent({
+      apiKey,
+      payload: {
         contents: geminiMessages,
         systemInstruction: {
           parts: [{ text: systemPrompt }]
         }
-      })
+      }
     });
-
-    if (!geminiRes.ok) {
-      const errorText = await geminiRes.text();
-      throw new Error(`Gemini API error ${geminiRes.status}: ${errorText}`);
-    }
-
-    const geminiData = await geminiRes.json();
-    const aiResponse = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-    if (!aiResponse) {
-      throw new Error('Gagal mendapatkan jawaban dari AI');
-    }
 
     // 6. Save current user message and AI response to Supabase
     await supabaseRest('POST', 'ai_chat_history', {
@@ -175,6 +156,18 @@ Batasan Penting:
     });
 
   } catch (error) {
-    sendJson(res, 502, { error: error instanceof Error ? error.message : 'Gagal memproses request AI' });
+    console.error('[ai-chat]', error?.code || 'UNKNOWN', error?.message || error);
+    const message = error instanceof Error ? error.message : 'Gagal memproses request AI';
+    const status = error?.code === 'GEMINI_QUOTA'
+      ? 429
+      : error?.code === 'GEMINI_UNAVAILABLE'
+        ? 503
+        : 502;
+    sendJson(res, status, {
+      error: message,
+      retryable: status === 503,
+      code: error?.code || undefined,
+      upstreamStatus: error?.upstreamStatus || undefined
+    });
   }
 }

@@ -48,11 +48,15 @@ export async function generateGeminiContent({
   language = 'id'
 }) {
   if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
-    throw new Error('GEMINI_API_KEY belum dikonfigurasi di server');
+    const err = new Error('GEMINI_API_KEY belum dikonfigurasi di server. Tambahkan key yang valid di environment variable.');
+    err.code = 'GEMINI_NO_KEY';
+    throw err;
   }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   let lastError = null;
+  let lastStatus = 0;
+  let lastBodySnippet = '';
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     const controller = new AbortController();
@@ -68,9 +72,15 @@ export async function generateGeminiContent({
 
       const bodyText = await response.text();
       if (!response.ok) {
+        lastStatus = response.status;
+        lastBodySnippet = bodyText.slice(0, 300);
+        console.error(`[gemini] attempt ${attempt}/${MAX_ATTEMPTS} → status ${response.status}`, lastBodySnippet);
+
         if (isQuotaExceeded(response.status, bodyText)) {
           const wrapped = new Error(buildGeminiQuotaMessage(language));
           wrapped.code = 'GEMINI_QUOTA';
+          wrapped.upstreamStatus = response.status;
+          wrapped.upstreamBody = lastBodySnippet;
           throw wrapped;
         }
         if (attempt < MAX_ATTEMPTS && isRetryableGeminiError(response.status, bodyText)) {
@@ -78,21 +88,35 @@ export async function generateGeminiContent({
           await sleep(BASE_DELAY_MS * (2 ** (attempt - 1)));
           continue;
         }
-        throw new Error(`Gemini API error ${response.status}: ${bodyText.slice(0, 240)}`);
+        const err = new Error(`Gemini API error ${response.status}: ${bodyText.slice(0, 240)}`);
+        err.code = 'GEMINI_API_ERROR';
+        err.upstreamStatus = response.status;
+        err.upstreamBody = bodyText.slice(0, 300);
+        throw err;
       }
 
       const data = JSON.parse(bodyText);
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       if (!text) {
-        throw new Error('Gagal mendapatkan jawaban dari AI');
+        const blockReason = data.promptFeedback?.blockReason || data.candidates?.[0]?.finishReason || 'unknown';
+        console.error(`[gemini] attempt ${attempt}/${MAX_ATTEMPTS} → empty response, blockReason=${blockReason}`);
+        const err = new Error(`AI tidak menghasilkan respons (reason: ${blockReason})`);
+        err.code = 'GEMINI_EMPTY';
+        err.upstreamBody = JSON.stringify({ blockReason, finishReason: data.candidates?.[0]?.finishReason }).slice(0, 300);
+        throw err;
       }
       return { text, attempt };
     } catch (error) {
       lastError = error;
-      if (error?.code === 'GEMINI_QUOTA') {
+      if (error?.code === 'GEMINI_QUOTA' || error?.code === 'GEMINI_NO_KEY' || error?.code === 'GEMINI_API_ERROR' || error?.code === 'GEMINI_EMPTY') {
         throw error;
       }
       const aborted = error instanceof Error && error.name === 'AbortError';
+      if (aborted) {
+        console.error(`[gemini] attempt ${attempt}/${MAX_ATTEMPTS} → timeout after ${timeoutMs}ms`);
+      } else {
+        console.error(`[gemini] attempt ${attempt}/${MAX_ATTEMPTS} → ${error instanceof Error ? error.message : String(error)}`);
+      }
       if (attempt < MAX_ATTEMPTS && (aborted || isRetryableGeminiError(503, error instanceof Error ? error.message : ''))) {
         await sleep(BASE_DELAY_MS * (2 ** (attempt - 1)));
         continue;
@@ -102,6 +126,9 @@ export async function generateGeminiContent({
         const wrapped = new Error(message);
         wrapped.code = 'GEMINI_UNAVAILABLE';
         wrapped.cause = lastError;
+        wrapped.upstreamStatus = lastStatus;
+        wrapped.upstreamBody = lastBodySnippet;
+        wrapped.totalAttempts = MAX_ATTEMPTS;
         throw wrapped;
       }
     } finally {
